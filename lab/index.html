@@ -50,7 +50,39 @@ body{font:600 16px/1.5 var(--body);margin:0}
 .k b{font-weight:900;color:var(--red)}
 .hud-tr{position:absolute;right:14px;top:8px;text-align:right;font:400 26px/1 var(--display);text-shadow:var(--o),0 3px 0 var(--ink);display:grid;gap:6px;justify-items:end}
 .coins{display:flex;gap:7px;align-items:center}
-.coins i{width:18px;height:18px;border-radius:50%;background:var(--sun);border:2.5px solid var(--ink)}
+.coins i{width:17px;height:17px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#ff8a1f;border:2.5px solid var(--ink)}
+.score{font:400 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.mult{font:400 22px/1 var(--display);color:var(--ink);text-shadow:none;background:var(--sun);border:3px solid var(--ink);border-radius:12px;padding:3px 9px;box-shadow:0 3px 0 var(--ink)}
+.mult.x1{background:var(--paper)}
+.mult.bump{animation:bump .35s}
+@keyframes bump{40%{transform:scale(1.35) rotate(-6deg)}}
+.flame{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:min(420px,72%);display:flex;align-items:center;gap:8px}
+.flame svg{width:30px;height:36px;flex:none}
+.flame-bar{position:relative;flex:1;height:26px;border:3px solid var(--ink);border-radius:999px;background:rgba(255,255,255,.88);overflow:hidden;box-shadow:0 3px 0 var(--ink)}
+.flame-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#ff4b3e,#ff8a1f 45%,#ffc928)}
+.flame-bar span{position:absolute;inset:0;display:grid;place-items:center;font:900 13px/1 var(--body);color:var(--ink);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.flame.low .flame-bar{animation:lowp .45s ease-in-out infinite alternate}
+@keyframes lowp{to{background:#ffc2bb}}
+.flame.hit{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(calc(-50% - 7px))}75%{transform:translateX(calc(-50% + 7px))}}
+.stage.run .speed{bottom:60px}
+.over{position:absolute;inset:0;display:grid;place-items:center;padding:12px;background:rgba(34,32,74,.45);z-index:4}
+.over-card{background:var(--paper);border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:14px 16px;width:min(480px,100%);max-height:100%;overflow:auto;display:grid;gap:10px;text-align:center}
+.over-card h3{margin:0;font:400 clamp(26px,4vw,38px)/1 var(--display);color:var(--red)}
+.over-card p{margin:0;font-size:15px;color:var(--ink-soft)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stats div{background:var(--sky);border:2.5px solid var(--ink);border-radius:12px;padding:6px 4px;display:grid}
+.stats b{font:400 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stats span{font-size:12px;font-weight:800;color:var(--ink-soft)}
+.newbest{justify-self:center;font:900 12px/1 var(--body);background:var(--sun);border:2.5px solid var(--ink);border-radius:999px;padding:5px 10px}
+.over-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.rules li{background:var(--paper);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);padding:10px 14px;display:grid;gap:2px;min-width:0}
+.rules b{font:400 20px/1.1 var(--display)}
+.rules span{font-size:14px;line-height:1.4;color:var(--ink-soft)}
+.rules .r-flame b{color:#e8650c}.rules .r-combo b{color:#8a63ff}.rules .r-hit b{color:var(--red)}
+.card .why{font-size:13px;line-height:1.4;background:#fff3e0;border:2px solid #ffc58a;border-radius:10px;padding:5px 8px}
+.card .why strong{font-weight:900;color:#c4500a}
 .who{font:900 12px/1 var(--body);text-shadow:none;color:var(--ink);background:var(--sun);border:2.5px solid var(--ink);border-radius:999px;padding:5px 10px}
 .who.watch{background:var(--paper)}
 .speed{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:min(320px,60%);height:22px;border:3px solid var(--ink);border-radius:999px;background:rgba(255,255,255,.85);overflow:hidden;box-shadow:0 3px 0 var(--ink)}
@@ -117,6 +149,8 @@ body{font:600 16px/1.5 var(--body);margin:0}
   .face{width:48px;height:48px}
   .hud-tr{font-size:22px}
   .sound-chip{top:auto;bottom:14px}
+  .stats{grid-template-columns:1fr 1fr}
+  .score{font-size:28px}
 }
 @media (prefers-reduced-motion:reduce){.pop{animation-duration:.01s}.btn{transition:none}}
 </style>
@@ -128,7 +162,7 @@ body{font:600 16px/1.5 var(--body);margin:0}
       <span class="eyebrow">Fireball · ideas for the endless run</span>
       <h1 class="logo">Marble Run Lab</h1>
     </div>
-    <p class="pitch">Ten track pieces that turn the endless run into a giant toy marble run. <b>Watch</b> Blaze roll through each one, press <b>Try it</b> to drive yourself, then vote on every piece below.</p>
+    <p class="pitch">The endless run as a giant toy marble run. <b>The goal: keep Blaze's flame burning as long as you can.</b> Play the full run, or click a piece below to try it on its own and vote.</p>
   </header>
 
   <div class="stage" id="stage" tabindex="0" aria-label="Marble run test track. Arrow keys or swipes to steer, jump and go heavy.">
@@ -142,30 +176,53 @@ body{font:600 16px/1.5 var(--body);margin:0}
         </div>
       </div>
       <div class="hud-tr">
-        <div class="coins"><i></i><span id="coins">0</span></div>
+        <div class="score" id="score" hidden>0</div>
+        <div class="mult x1" id="mult" hidden>x1</div>
+        <div class="coins" title="Embers"><i></i><span id="coins">0</span></div>
         <div class="who watch" id="who">Watching</div>
       </div>
       <div class="speed" id="speed" hidden><i id="speedFill"></i><em id="speedMark"></em><span>SPEED FOR THE LOOP</span></div>
+      <div class="flame" id="flame" hidden><svg viewBox="0 0 30 36" aria-hidden="true"><path d="M15 34C6 34 2 27 4 20c2-6 7-8 7-15 4 3 6 7 5 11 2-1 3-3 3-5 5 4 8 10 6 16-1 5-5 7-10 7Z" fill="#ff8a1f" stroke="#22204a" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 31c-4 0-6-3-5-6 1-3 4-4 4-7 3 2 6 5 5 9-1 3-2 4-4 4Z" fill="#ffd23f"/></svg><div class="flame-bar"><i id="flameFill"></i><span id="flameTxt">0 m</span></div></div>
       <div class="pops" id="pops"></div>
       <button class="sound-chip" id="soundChip" type="button">Tap for sound</button>
     </div>
     <div class="fade" id="fade"></div>
+    <div class="over" id="over" hidden>
+      <div class="over-card" role="dialog" aria-labelledby="overTitle">
+        <h3 id="overTitle">Flame out!</h3>
+        <span class="newbest" id="newBest" hidden>New best!</span>
+        <div class="stats">
+          <div><b id="stDist">0</b><span>metres</span></div>
+          <div><b id="stScore">0</b><span>score</span></div>
+          <div><b id="stCombo">x1</b><span>best combo</span></div>
+          <div><b id="stEmb">0</b><span>embers</span></div>
+        </div>
+        <p id="stBest">Best score: 0</p>
+        <div class="over-btns"><button class="btn" id="oAgain" type="button">Roll again</button><button class="btn" id="oWatch" type="button">Watch Blaze</button></div>
+      </div>
+    </div>
     <div class="msg" id="loading">Building the marble run…</div>
     <div class="msg" id="noGL" hidden>This needs WebGL. Try another browser.</div>
   </div>
 
   <div class="bar">
+    <button class="btn" id="bMix" type="button" aria-pressed="true">Play the full run</button>
     <button class="btn" id="bWatch" type="button" aria-pressed="true">Watch Blaze</button>
-    <button class="btn" id="bTry" type="button" aria-pressed="false">Try it yourself</button>
-    <button class="btn" id="bMix" type="button" aria-pressed="false">All pieces in a row</button>
+    <button class="btn" id="bTry" type="button" aria-pressed="false">Drive yourself</button>
     <button class="btn" id="bSound" type="button" aria-pressed="false">Sound off</button>
   </div>
   <p class="legend"><kbd>←</kbd> <kbd>→</kbd> or swipe sideways to steer · <kbd>↑</kbd> or swipe up to jump · <kbd>↓</kbd> or swipe down to go heavy · <kbd>R</kbd> restart</p>
 
+  <ul class="rules" aria-label="How the run works">
+    <li class="r-flame"><b>The flame burns down</b><span>Blaze's flame shrinks every second. Grab embers to relight it. When it goes out, the run is over.</span></li>
+    <li class="r-combo"><b>Tricks build a combo</b><span>Hoops, smashes, loops, flings and tunes push your combo up to x8. Your score grows faster with every step.</span></li>
+    <li class="r-hit"><b>Hits cost flame</b><span>Bumping a block, falling off or failing the loop burns flame and resets your combo to x1.</span></li>
+  </ul>
+
   <section>
     <div class="sec-h">
       <h2>The ten pieces</h2>
-      <p>Round 1 pieces fit the current game quickly. Round 2 pieces need new track shapes, so they take longer to build. Click a card to load that piece.</p>
+      <p>Each piece gives you a choice: the risky way has more embers or a trick, the safe way keeps your combo. Round 1 pieces fit the current game quickly; Round 2 pieces need new track shapes. Click a card to play that piece on its own.</p>
     </div>
   </section>
   <section class="pieces" id="pieces" aria-label="Track pieces"></section>
@@ -511,6 +568,7 @@ const TEX = {
   star: canvasTex(64, 64, (g) => { g.fillStyle = '#ffd23f'; g.strokeStyle = INK; g.lineWidth = 5; g.lineJoin = 'round'; g.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? 12 : 28; g.lineTo(32 + Math.cos(a) * d, 33 + Math.sin(a) * d); } g.closePath(); g.fill(); g.stroke(); }),
   glow: canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,0.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); }),
   shard: canvasTex(32, 32, (g) => { g.fillStyle = '#e8fbff'; g.strokeStyle = '#5fd0ff'; g.lineWidth = 3; g.beginPath(); g.moveTo(4, 28); g.lineTo(16, 3); g.lineTo(29, 24); g.closePath(); g.fill(); g.stroke(); }),
+  ember: canvasTex(64, 64, (g) => { g.lineJoin = 'round'; g.strokeStyle = INK; g.lineWidth = 4; g.fillStyle = '#ff8a1f'; g.beginPath(); g.moveTo(32, 60); g.bezierCurveTo(12, 60, 6, 44, 14, 32); g.bezierCurveTo(20, 22, 26, 18, 24, 4); g.bezierCurveTo(38, 12, 44, 22, 42, 32); g.bezierCurveTo(46, 28, 48, 24, 48, 20); g.bezierCurveTo(58, 32, 58, 48, 48, 56); g.bezierCurveTo(44, 59, 38, 60, 32, 60); g.fill(); g.stroke(); g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(32, 56); g.bezierCurveTo(22, 56, 20, 46, 26, 40); g.bezierCurveTo(30, 36, 32, 32, 32, 26); g.bezierCurveTo(40, 32, 44, 40, 42, 48); g.bezierCurveTo(40, 54, 36, 56, 32, 56); g.fill(); }),
   checker: canvasTex(128, 32, (g) => { for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? INK : '#ffffff'; g.fillRect(i * 8, j * 8, 8, 8); } }),
   arrowUp: canvasTex(64, 64, (g) => { g.fillStyle = '#35c46a'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff'; g.strokeStyle = INK; g.lineWidth = 4; g.beginPath(); g.moveTo(32, 8); g.lineTo(54, 32); g.lineTo(41, 32); g.lineTo(41, 56); g.lineTo(23, 56); g.lineTo(23, 32); g.lineTo(10, 32); g.closePath(); g.fill(); g.stroke(); }),
   chev: canvasTex(64, 128, (g) => { g.fillStyle = '#ff8a1f'; g.fillRect(0, 0, 64, 128); g.fillStyle = '#ffe14d'; g.strokeStyle = INK; g.lineWidth = 4; for (const y of [10, 52, 94]) { g.beginPath(); g.moveTo(6, y + 26); g.lineTo(32, y); g.lineTo(58, y + 26); g.lineTo(58, y + 38); g.lineTo(32, y + 14); g.lineTo(6, y + 38); g.closePath(); g.fill(); g.stroke(); } }),
@@ -600,6 +658,35 @@ const S = { t: 0, watch: true, mix: false, piece: 'drop', coins: 0, planI: 0, pl
 const B = { s: 0, x: 0, y: 0, vy: 0, v: VBASE, vx: 0, lane: 1, air: false, heavy: 0, boost: 0, stun: 0, inv: 0, squash: 0, slope: 0, ground: null, lastGround: 0, script: null, zone: null, region: 0, pitch: 0, yaw: Math.PI, expr: 'happy', exprT: 0, blinkT: 2, phase: 0, camLow: 0 };
 let slabs = [], walls = [], coins = [], pads = [], hoops = [], bars = [], cats = [], events = [], trigs = [], zones = [], anims = [], gates = [];
 const course = { pieces: [], endS: 0, endY: 0 };
+const RUN = { on: false, flame: 1, score: 0, mult: 1, bestMult: 1, s0: 0, lastS: 0, over: false, overT: 0, shown: false, embers: 0, warnT: 0, best: 0 };
+try { RUN.best = +localStorage.getItem('mrl-best') || 0; } catch (e) {}
+const live = () => RUN.on && !RUN.over;
+function gain(f) { if (live()) RUN.flame = Math.min(1, RUN.flame + f); }
+function trick(f) {
+  if (!live()) return;
+  RUN.mult = Math.min(8, RUN.mult + 1); RUN.bestMult = Math.max(RUN.bestMult, RUN.mult); RUN.score += 50 * RUN.mult; gain(f || 0);
+  const m = $('mult'); m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump');
+}
+function hurt(f) {
+  if (!live()) return;
+  RUN.flame -= f; if (RUN.mult > 1) pop('COMBO LOST', 'red'); RUN.mult = 1;
+  const fl = $('flame'); fl.classList.remove('hit'); void fl.offsetWidth; fl.classList.add('hit');
+}
+function flameOut() {
+  RUN.over = true; RUN.flame = 0; RUN.overT = S.t; RUN.shown = false; sfx('gameover'); B.heavy = 0; B.boost = 0;
+  for (let k = 0; k < 12; k++) { ballPos(); _v.set(rnd(-1, 1), rnd(1.5, 3), rnd(-1, 1)); spawn('puff', _p, _v, rnd(0.8, 1.4), rnd(0.4, 0.7), '#9a98ad'); }
+  pop('FLAME OUT', 'red');
+}
+function showOver() {
+  RUN.shown = true;
+  const dist = Math.round(RUN.lastS - RUN.s0), sc = Math.round(RUN.score), nb = sc > RUN.best;
+  if (nb) { RUN.best = sc; try { localStorage.setItem('mrl-best', String(sc)); } catch (e) {} }
+  $('stDist').textContent = dist; $('stScore').textContent = sc; $('stCombo').textContent = 'x' + RUN.bestMult; $('stEmb').textContent = RUN.embers;
+  $('newBest').hidden = !nb; $('stBest').textContent = 'Best score: ' + RUN.best;
+  $('overTitle').textContent = dist > 1500 ? 'What a run!' : 'Flame out!';
+  $('over').hidden = false;
+  if (!S.watch) $('oAgain').focus({ preventScroll: true });
+}
 let CUR = null, pidN = 0;
 const A = s => CUR.ps + s;
 const lin = (s0, y0, s1, y1) => { const a = A(s0), b = A(s1); return s => y0 + (y1 - y0) * clamp((s - a) / (b - a || 1), 0, 1); };
@@ -661,7 +748,8 @@ function groundAt(s, x, yMax) {
 
 // ---------- building helpers (s relative to the piece) ----------
 const add = m => { CUR.g.add(m); return m; };
-function coin(s, x, y) { const m = add(inked(mesh(G.coin, tm('#ffd23f')), 0.12)); m.position.set(x, y, -A(s)); coins.push(own({ s: A(s), x, y, mesh: m, taken: false })); }
+const EMBERM = new T.SpriteMaterial({ map: TEX.ember, alphaTest: 0.4 });
+function coin(s, x, y) { const m = add(new T.Sprite(EMBERM)); m.scale.set(0.66, 0.66, 1); m.position.set(x, y, -A(s)); coins.push(own({ s: A(s), x, y, mesh: m, taken: false })); }
 function coinRow(s0, s1, x, hf, step = 2, lift = 0.55, xf) { for (let s = s0; s <= s1 + 0.01; s += step) coin(s, xf ? xf(A(s)) : x, hf(A(s), x) + lift); }
 function block(s, x, y, o = {}) {
   const w = o.w || 1.1, h = o.h || 0.9, d = o.d || 0.9, kind = o.kind || 'block';
@@ -707,12 +795,12 @@ const PIECES = {
     const h = lin(0, y, 26, y - 1); slab({ s0: A(0), s1: A(26), hw: 2, h, col: '#2ea7ff' });
     for (const sd of [-1, 1]) { const p = add(inked(mesh(G.cyl, tm('#ffffff'), 0.16, 3.4, 0.16), 0.1)); p.position.set(sd * 2.3, h(A(8)) + 1.7, -A(8)); }
     const ban = add(mesh(G.box, toon('#ffffff', { map: TEX.checker }), 4.9, 0.7, 0.12)); ban.position.set(0, h(A(8)) + 3.2, -A(8)); inked(ban, 0.04);
-    event(9, () => { if (!S.mix) pop('NICE ROLL!', 'yellow', S.coins + ' coins'); });
+    event(9, () => { if (!S.mix) pop('NICE ROLL!', 'yellow', S.coins + ' embers'); });
     return { len: 26, y1: y - 1 };
   } },
 
   drop: {
-    name: 'Two floors', round: 1, keys: [['↑', 'jump the holes'], ['↓', 'crash through']],
+    name: 'Two floors', round: 1, why: 'The top floor has more embers but holes. Crashing a trapdoor counts as a trick.',  keys: [['↑', 'jump the holes'], ['↓', 'crash through']],
     desc: 'The track has two floors. Holes and trapdoors drop you to the floor below. Jump them to stay on top, or go heavy to crash through.',
     build(y, A) {
       const Yl = y - 4.6, col = '#ffc928', hl = lin(10, Yl, 94, Yl - 0.6);
@@ -735,7 +823,7 @@ const PIECES = {
   },
 
   bridge: {
-    name: 'Bridge or tunnel', round: 1, keys: [['← →', 'pick a side'], ['↑', 'jump gaps']],
+    name: 'Bridge or tunnel', round: 1, why: 'The bridge is full of embers, but one wrong step and you fall. The tunnel is safer and has hardly any.',  keys: [['← →', 'pick a side'], ['↑', 'jump gaps']],
     desc: 'The road splits. Left is a narrow bridge full of coins with nothing beside it. Right is a dark tunnel where blocks only show up late.',
     build(y, A) {
       const sf = 10, se = 96, span = se - sf, F = 3.6;
@@ -769,7 +857,7 @@ const PIECES = {
   },
 
   pads: {
-    name: 'Jump pads & hoops', round: 1, keys: [['← →', 'steer in the air']],
+    name: 'Jump pads & hoops', round: 1, why: 'A hoop gives a trick, extra flame and speed. Missing it costs nothing.',  keys: [['← →', 'steer in the air']],
     desc: 'Pads launch you over big gaps to a lower level. Steer in the air through the hoop and you get a speed boost.',
     build(y, A) {
       const col = '#35c46a', y2 = y - 3, y3 = y - 6.4;
@@ -785,7 +873,7 @@ const PIECES = {
   },
 
   gate: {
-    name: 'Switch gate', round: 1, keys: [['← →', 'hit a button'], ['↑', 'jump blocks']],
+    name: 'Switch gate', round: 1, why: 'The blue side is lined with embers. The red side only has blocks to jump.',  keys: [['← →', 'hit a button'], ['↑', 'jump blocks']],
     desc: 'A flipper ticks left and right. Roll over a button to lock it your way: coins on the blue side, jumps on the red side.',
     build(y, A) {
       const col = '#8a63ff', sg = 26, se = 70;
@@ -812,7 +900,7 @@ const PIECES = {
   },
 
   heavy: {
-    name: 'Heavy ball', round: 1, keys: [['↓', 'go heavy'], ['↑', 'jump']],
+    name: 'Heavy ball', round: 1, why: 'Every smash is a trick. Slamming the target gives a big flame boost.',  keys: [['↓', 'go heavy'], ['↑', 'jump']],
     desc: 'Swipe down and Blaze turns into a heavy iron ball for a moment. Smash through glass and crates, and slam the target for a coin fountain.',
     build(y, A) {
       const h = lin(0, y, 88, y - 1.5), col = '#9aa3c7';
@@ -830,7 +918,7 @@ const PIECES = {
   },
 
   xylo: {
-    name: 'Xylophone', round: 1, keys: [['← →', 'follow the glow']],
+    name: 'Xylophone', round: 1, why: 'Play the whole tune for a trick and a big flame boost.',  keys: [['← →', 'follow the glow']],
     desc: 'Every bar plays a note. Follow the glowing bars and Blaze plays a tune. Miss them and it sounds wrong.',
     build(y, A) {
       const h = lin(0, y, 86, y - 2);
@@ -849,7 +937,7 @@ const PIECES = {
         }
       });
       event(1, () => { run.good = 0; run.n = 0; });
-      event(76, () => { if (run.good >= 16) { pop('MELODY!', 'yellow', run.good + ' of 20 notes, +20 coins'); S.coins += 20; S.cheerT = 1.5; sfx('cheer'); } else pop(run.good + ' / 20', 'red', 'notes right'); });
+      event(76, () => { if (run.good >= 16) { pop('MELODY!', 'yellow', run.good + ' of 20 notes, big flame boost'); trick(0.25); S.cheerT = 1.5; sfx('cheer'); } else { gain(run.good * 0.006); pop(run.good + ' / 20', 'red', 'notes right'); } });
       const plan = [[1, 'L1']]; let cur = 1;
       path.forEach((pl, i) => { if (pl !== cur) { plan.push([10 + i * 3.2 - 2.4, 'L' + pl]); cur = pl; } });
       return { len: 86, y1: y - 2, plan };
@@ -857,7 +945,7 @@ const PIECES = {
   },
 
   seesaw: {
-    name: 'Seesaw catapult', round: 1, keys: [['← →', 'find the plank']],
+    name: 'Seesaw catapult', round: 1, why: 'Every fling is a trick. Missing the plank means hitting the wall.',  keys: [['← →', 'find the plank']],
     desc: 'Roll onto a plank and a weight drops on the other end. You fly over the brick wall. Miss the plank and you hit the wall.',
     build(y, A) {
       const h = lin(0, y, 92, y - 1.5), col = '#35c46a';
@@ -879,7 +967,7 @@ const PIECES = {
   },
 
   halfpipe: {
-    name: 'Half-pipe', round: 2, keys: [['← →', 'ride up the walls']],
+    name: 'Half-pipe', round: 2, why: 'The embers sit high on the walls. The blocks are in the middle.',  keys: [['← →', 'ride up the walls']],
     desc: 'The track curls up into a U. Roll high up the walls to grab coins and to get around the blocks in the middle.',
     build(y, A) {
       const base = lin(0, y, 92, y - 2), k = s => Math.min(sm((s - A(2)) / 10), sm((A(90) - s) / 10));
@@ -894,7 +982,7 @@ const PIECES = {
   },
 
   funnel: {
-    name: 'Funnel', round: 2, keys: [['←', 'stay high'], ['→', 'dive in']],
+    name: 'Funnel', round: 2, why: 'Stay high on the bowl wall to collect the ring of embers.',  keys: [['←', 'stay high'], ['→', 'dive in']],
     desc: 'Spiral down a giant bowl, faster and faster, then drop out of the bottom onto a lower level. Steer out for the high coins.',
     build(y, A) {
       const sc = 31, R0 = 5.6, Rr = 7.2, rh = 0.9, yb = y - 4.4, D = y + 0.2 - yb;
@@ -930,7 +1018,7 @@ const PIECES = {
   },
 
   loop: {
-    name: 'Loop', round: 2, keys: [['← →', 'hit the arrows']],
+    name: 'Loop', round: 2, why: 'Making the loop is a trick plus flame. Too slow and you fall back and lose flame.',  keys: [['← →', 'hit the arrows']],
     desc: 'You only make it over the top with enough speed. Roll over the orange boost arrows and dodge the blocks, or you fall back down.',
     build(y, A) {
       const col = '#ff4b3e', sL = 46, Rl = 3.4, yl = y - 0.8, h = lin(0, y, 30, yl);
@@ -962,8 +1050,8 @@ const PIECES = {
           const Rc = Rl - R; B.s = A(sL) + Rc * Math.sin(a); B.y = yl + Rl - Rc * Math.cos(a) - R; B.x = -0.9 + 1.8 * Math.min(a, Math.PI * 2) / (Math.PI * 2); B.pitch = a; B.v = va;
           if (a >= aMax) {
             B.script = null; B.zone = null;
-            if (ok) { B.s = A(sL) + 0.05; B.x = 0.9; B.y = yl; B.pitch = 0; B.v = v0; B.air = false; pop('LOOP!', 'yellow'); S.cheerT = 1.2; sfx('trick'); }
-            else { B.x = 0.9; B.air = true; B.vy = 0; B.v = 4; B.pitch = 0; B.stun = 0.8; pop('TOO SLOW!', 'red', 'hit the arrows next time'); sfx('fall', 0.6); }
+            if (ok) { B.s = A(sL) + 0.05; B.x = 0.9; B.y = yl; B.pitch = 0; B.v = v0; B.air = false; pop('LOOP!', 'yellow'); trick(0.12); S.cheerT = 1.2; sfx('trick'); }
+            else { B.x = 0.9; B.air = true; B.vy = 0; B.v = 4; B.pitch = 0; B.stun = 0.8; hurt(0.12); pop('TOO SLOW!', 'red', 'hit the arrows next time'); sfx('fall', 0.6); }
           }
         } };
       } }));
@@ -975,7 +1063,7 @@ const ORDER = ['drop', 'bridge', 'pads', 'gate', 'heavy', 'xylo', 'seesaw', 'hal
 
 // ---------- course ----------
 function disposeGroup(g) {
-  g.traverse(o => { if (o.geometry && !o.geometry.userData.shared && o.geometry !== G.box) o.geometry.dispose(); if (o.material && o.material.userData && o.material.userData.own) { if (o.material.map && !o.material.map._shared) o.material.map.dispose(); o.material.dispose(); } });
+  g.traverse(o => { if (o.geometry && !o.isSprite && !o.geometry.userData.shared && o.geometry !== G.box) o.geometry.dispose(); if (o.material && o.material.userData && o.material.userData.own) { if (o.material.map && !o.material.map._shared) o.material.map.dispose(); o.material.dispose(); } });
   scene.remove(g);
 }
 function clearCourse() {
@@ -1002,6 +1090,7 @@ function prune() {
     const f = a => a.filter(o => o.pid !== pc.pid);
     slabs = f(slabs); walls = f(walls); coins = f(coins); pads = f(pads); hoops = f(hoops); bars = f(bars); cats = f(cats); events = f(events); trigs = f(trigs); zones = f(zones); gates = f(gates);
     S.plan = S.plan.filter(p => p.s > pc.s1 - 1);
+    S.planI = S.plan.findIndex(p => p.s > B.s); if (S.planI < 0) S.planI = S.plan.length;
   }
 }
 function nextMix() { if (!S.mixBag.length) S.mixBag = ORDER.slice().sort(() => Math.random() - 0.5); return S.mixBag.pop(); }
@@ -1016,6 +1105,9 @@ function load(id, mix) {
   clearCourse(); S.plan = []; resetBall(); $('pops').textContent = '';
   addPiece('start');
   if (S.mix) { S.mixBag = []; extendMix(); } else { addPiece(id); addPiece('finish'); }
+  RUN.on = S.mix; RUN.flame = 1; RUN.score = 0; RUN.mult = 1; RUN.bestMult = 1; RUN.s0 = B.s; RUN.lastS = B.s; RUN.over = false; RUN.shown = false; RUN.embers = 0;
+  $('over').hidden = true; stage.classList.toggle('run', RUN.on);
+  if (RUN.on) pop('KEEP THE FLAME BURNING', 'yellow', 'grab embers, do tricks');
   markCards(); updHud(true);
 }
 function restart() { S.fading = 0.5; $('fade').classList.add('on'); setTimeout(() => { load(S.piece, S.mix); $('fade').classList.remove('on'); }, 260); }
@@ -1026,14 +1118,15 @@ function act(a, fromBot) {
   if (!fromBot && S.watch) setWatch(false);
   if (a === 'L' || a === 'R') { B.lane += a === 'L' ? -1 : 1; const L = lanesNow(); B.lane = clamp(B.lane, 0, L.length - 1); if (B.script) B.lane = clamp(B.lane, 0, 2); }
   else if (a[0] === 'L') B.lane = +a.slice(1);
-  else if (a === 'J') { if (!B.script && (!B.air || S.t - B.lastGround < 0.12)) { B.vy = 10.5 + Math.max(0, B.slope * B.v); B.air = true; B.lastGround = -9; sfx('jump'); } }
+  else if (a === 'J') { if (!B.script && (!B.air || S.t - B.lastGround < 0.12)) { B.vy = 10.5 + Math.max(0, B.slope * B.v); B.air = true; B.lastGround = -9; S.pendJ = 0; sfx('jump'); } else if (fromBot) S.pendJ = 0.3; }
   else if (a === 'H') { if (!B.script) { B.heavy = 0.7; if (B.air) B.vy = Math.min(B.vy, -14); sfx2('heavy'); } }
 }
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
   const k = e.key, m = { ArrowLeft: 'L', a: 'L', A: 'L', ArrowRight: 'R', d: 'R', D: 'R', ArrowUp: 'J', w: 'J', W: 'J', ' ': 'J', ArrowDown: 'H', s: 'H', S: 'H' }[k];
   const onStage = document.activeElement === stage || document.activeElement === document.body;
-  if (m && onStage) { e.preventDefault(); if (!e.repeat) { startAudio(); act(m); } }
+  if (RUN.over && RUN.shown && (k === ' ' || k === 'Enter' || k === 'ArrowUp') && !e.repeat) { e.preventDefault(); setWatch(false); restart(); return; }
+  if (m && onStage) { e.preventDefault(); if (!e.repeat && !RUN.over) { startAudio(); act(m); } }
   if ((k === 'r' || k === 'R') && onStage) restart();
 });
 let tp = null;
@@ -1051,42 +1144,43 @@ function pop(text, col = 'yellow', small) {
 }
 function bonk() {
   if (B.inv > 0) return;
+  hurt(0.18);
   B.v = 4; B.stun = 0.8; B.inv = 1.3; S.shake = 0.4; sfx('bonk'); burst('star', 6, '#ffffff', 3, 0.35); pop('BONK!', 'red');
 }
 function smash(w) {
   w.broken = true; w.mesh.visible = false; S.shake = 0.3;
   if (w.kind === 'glass') { sfx2('glass'); burst('shard', 18, '#ffffff', 6, 0.3); pop('SMASH!', 'blue'); }
   else { sfx('hit'); burst('puff', 10, '#e2a65e', 4, 0.5); pop('CRUNCH!', 'yellow'); }
-  S.coins += 2;
+  trick(0.02);
 }
 function slam(sl) {
   sfx2('slam'); S.shake = 0.5; puffs(14, 2.2);
   if (sl && sl.door) breakDoor(sl);
-  if (sl && sl.plate && !sl.paid) { sl.paid = true; S.coins += 10; S.cheerT = 1.2; pop('SLAM!', 'yellow', '+10 coins'); for (let k = 0; k < 14; k++) { ballPos(); _v.set(rnd(-4, 4), rnd(6, 11), -B.v * 0.5 + rnd(-3, 3)); spawn('coin', _p, _v, 1.1, 0.42, '#ffd23f'); } }
+  if (sl && sl.plate && !sl.paid) { sl.paid = true; trick(0.15); S.cheerT = 1.2; pop('SLAM!', 'yellow', 'big flame boost'); for (let k = 0; k < 14; k++) { ballPos(); _v.set(rnd(-4, 4), rnd(6, 11), -B.v * 0.5 + rnd(-3, 3)); spawn('coin', _p, _v, 1.1, 0.42, '#ffd23f'); } }
 }
-function breakDoor(sl) { if (sl.broken) return; sl.broken = true; sl.meshes.forEach(m => m.visible = false); sfx('door'); B.air = true; B.vy = -2; pop('CRASH!', 'red', 'down you go'); burst('puff', 8, '#ff9a8a', 3, 0.5); }
+function breakDoor(sl) { if (sl.broken) return; sl.broken = true; sl.meshes.forEach(m => m.visible = false); sfx('door'); B.air = true; B.vy = -2; trick(0.02); pop('CRASH!', 'red', 'down you go'); burst('puff', 8, '#ff9a8a', 3, 0.5); }
 function land(g) {
   const impact = -B.vy; B.y = g.h; B.vy = 0; B.air = false; B.ground = g.sl;
   if (impact > 7) { B.squash = 1; sfx('land', clamp(impact / 22, 0.25, 0.9)); puffs(Math.round(clamp(impact / 3, 3, 10))); }
   if (B.heavy > 0 && impact > 3) slam(g.sl);
 }
 function respawn() {
-  let sp = null; for (let i = S.safe.length - 1; i >= 0; i--) if (S.safe[i].t <= S.t - 0.9) { sp = S.safe[i]; break; }
+  let sp = null; for (let i = S.safe.length - 1; i >= 0; i--) if (S.safe[i].t <= S.t - 0.9 && S.safe[i].s <= B.s - 9) { sp = S.safe[i]; break; }
   if (!sp) sp = S.safe[0] || { s: curPiece().s0 + 0.5, x: 0, y: curPiece().y0, lane: 1, region: 0 };
   Object.assign(B, { s: sp.s, x: sp.x, y: sp.y + 0.05, vy: 0, v: 12, lane: sp.lane, region: sp.region, air: true, heavy: 0, stun: 0, inv: 1.6, zone: null, script: null, pitch: 0, roll: 0 });
   B.zone = zoneAt(B.s);
   S.safe = S.safe.filter(p => p.s <= sp.s);
   S.planI = S.plan.findIndex(p => p.s > B.s); if (S.planI < 0) S.planI = S.plan.length;
-  pop('WHOOPS!', 'red'); camInit = true;
+  hurt(0.25); pop('WHOOPS!', 'red'); camInit = true;
 }
 function physics(dt) {
   const z = zoneAt(B.s);
   if (z !== B.zone) { const L0 = z ? z.lanes(B.s) : LX; let bi = 0; L0.forEach((x, i) => { if (Math.abs(x - B.x) < Math.abs(L0[bi] - B.x)) bi = i; }); B.lane = bi; B.zone = z; }
   const L = lanesNow(); B.lane = clamp(B.lane, 0, L.length - 1);
   const tx = L[B.lane], rate = (B.air ? 9 : 12) * dt; B.vx = clamp(tx - B.x, -rate, rate); B.x += B.vx;
-  const k = B.boost > 0 ? 0.25 : 0.55; B.v += (VBASE - B.v) * Math.min(1, k * dt * (B.v < VBASE ? 3 : 1));
+  const k = B.boost > 0 ? 0.25 : 0.55, vb = RUN.over ? 0 : VBASE; B.v += (vb - B.v) * Math.min(1, (RUN.over ? 1.6 : k) * dt * (B.v < vb ? 3 : 1));
   if (!B.air) B.v -= B.slope * 9 * dt;
-  B.v = clamp(B.v, 3, 30); if (B.stun > 0) B.v = Math.min(B.v, 8);
+  B.v = clamp(B.v, RUN.over ? 0 : 3, 30); if (B.stun > 0) B.v = Math.min(B.v, 8);
   B.s += B.v * dt;
   const prevY = B.y;
   if (!B.air) {
@@ -1110,12 +1204,12 @@ function interact(ps, pyy) {
   for (const w of walls) {
     if (w.broken || B.s + R < w.s0 || B.s - R > w.s1 || Math.abs(B.x - w.x) > w.hw + R * 0.6 || B.y > w.y1 - 0.05 || B.y + 2 * R < w.y0) continue;
     if ((w.kind === 'glass' || w.kind === 'crate') && B.heavy > 0) smash(w);
-    else if (w.kind === 'post') { if (B.inv <= 0) { B.lane = 2; B.v *= 0.6; B.inv = 0.5; sfx('bump'); pop('BOING', 'red', 'pick a side!'); } }
+    else if (w.kind === 'post') { if (B.inv <= 0) { B.lane = 2; B.v *= 0.6; B.inv = 0.5; hurt(0.05); sfx('bump'); pop('BOING', 'red', 'pick a side!'); } }
     else bonk();
   }
   for (const c of coins) {
     if (c.taken || Math.abs(B.s - c.s) > 0.85 || Math.abs(B.x - c.x) > 0.8 || Math.abs(cy - c.y) > 0.95) continue;
-    c.taken = true; c.mesh.visible = false; S.coins++; sfx('coin', 0.7); ballPos(); _v.set(0, 3, -B.v * 0.8); spawn('glow', _p, _v, 0.3, 0.6, '#ffe14d');
+    c.taken = true; c.mesh.visible = false; S.coins++; if (live()) { RUN.embers++; gain(0.016); RUN.score += 10 * RUN.mult; } sfx('coin', 0.7); ballPos(); _v.set(0, 3, -B.v * 0.8); spawn('glow', _p, _v, 0.3, 0.6, '#ffe14d');
   }
   if (!B.air) for (const p of pads) {
     if (B.s < p.s0 || B.s > p.s1 || Math.abs(B.x - p.x) > p.hw || S.t - p.lastT < 0.5) continue;
@@ -1126,7 +1220,7 @@ function interact(ps, pyy) {
   }
   for (const h of hoops) {
     if (!(ps < h.s && B.s >= h.s)) continue;
-    if (Math.hypot(B.x - h.x, cy - h.y) < h.r) { B.v = 25; B.boost = 1.5; S.coins += 5; S.cheerT = 1; sfx('trick'); sfx('boost'); pop('HOOP!', 'yellow', 'speed boost, +5'); burst('glow', 14, '#ff9cf0', 5, 0.6); h.done = true; }
+    if (Math.hypot(B.x - h.x, cy - h.y) < h.r) { B.v = 25; B.boost = 1.5; trick(0.1); S.cheerT = 1; sfx('trick'); sfx('boost'); pop('HOOP!', 'yellow', 'speed boost + flame'); burst('glow', 14, '#ff9cf0', 5, 0.6); h.done = true; }
   }
   for (const b of bars) {
     if (!(ps < b.s && B.s >= b.s) || Math.abs(B.x - b.x) > 0.62 || B.air && B.y - pyy > 0.6) continue;
@@ -1136,7 +1230,7 @@ function interact(ps, pyy) {
   }
   for (const c of cats) {
     if (B.air || B.s < c.s - 1.6 || B.s > c.s - 0.3 || Math.abs(B.x - c.x) > 0.6 || S.t - c.fired < 1) continue;
-    c.fired = S.t; B.vy = 16; B.air = true; B.lastGround = -9; sfx('squash'); sfx2('spring'); S.shake = 0.3; pop('FLING!', 'green');
+    c.fired = S.t; B.vy = 16; B.air = true; B.lastGround = -9; sfx('squash'); sfx2('spring'); S.shake = 0.3; trick(0.03); pop('FLING!', 'green');
   }
   for (const e of events) if (ps < e.s && B.s >= e.s) e.fn();
   for (const t of trigs) if (ps < t.s && B.s >= t.s && !B.script && !(S.t - (t.last || -9) < 1.5)) { t.last = S.t; B.script = t.start(); break; }
@@ -1146,13 +1240,25 @@ function step(dt) {
   B.heavy = Math.max(0, B.heavy - dt); B.boost = Math.max(0, B.boost - dt); B.stun = Math.max(0, B.stun - dt); B.inv = Math.max(0, B.inv - dt); S.cheerT = Math.max(0, S.cheerT - dt);
   for (const g of gates) { if (!g.locked) { g.t += dt; if (g.t > 0.9) { g.t = 0; g.state *= -1; if (Math.abs(g.mesh.position.z + B.s) < 30) sfx2('tick'); } } }
   if (S.fading > 0) { S.fading -= dt; return; }
+  if (live()) {
+    RUN.flame -= (0.042 + (B.s - RUN.s0) * 0.000006) * dt;
+    if (B.s > RUN.lastS) { RUN.score += (B.s - RUN.lastS) * RUN.mult; RUN.lastS = B.s; }
+    if (RUN.flame < 0.22) { RUN.warnT -= dt; if (RUN.warnT <= 0) { RUN.warnT = 0.6; sfx2('tick'); } }
+    if (RUN.flame <= 0) flameOut();
+  }
+  if (RUN.over) {
+    if (!RUN.shown && S.t - RUN.overT > 1.4) showOver();
+    if (S.watch && S.t - RUN.overT > 4.5) { RUN.overT = 1e9; restart(); }
+    if (Math.random() < dt * 4) { ballPos(); _v.set(rnd(-0.5, 0.5), rnd(1, 2), 0); spawn('puff', _p, _v, 1, 0.45, '#9a98ad'); }
+  }
   const ps = B.s, pyy = B.y;
   if (B.script) B.script.update(dt); else physics(dt);
   interact(ps, pyy);
-  if (S.watch) while (S.planI < S.plan.length && B.s >= S.plan[S.planI].s) act(S.plan[S.planI++].a, true);
+  if (S.pendJ > 0) { S.pendJ -= dt; if (S.watch && !B.air) act('J', true); }
+  if (S.watch && !RUN.over) while (S.planI < S.plan.length && B.s >= S.plan[S.planI].s) act(S.plan[S.planI++].a, true);
   else while (S.planI < S.plan.length && B.s >= S.plan[S.planI].s) S.planI++;
   S.safeT -= dt;
-  if (!B.air && !B.script && S.safeT <= 0 && B.ground && !B.ground.door) { S.safeT = 0.15; S.safe.push({ s: B.s, x: B.x, y: B.y, lane: B.lane, region: B.region, t: S.t }); if (S.safe.length > 16) S.safe.shift(); }
+  if (!B.air && !B.script && S.safeT <= 0 && B.ground && !B.ground.door) { S.safeT = 0.15; S.safe.push({ s: B.s, x: B.x, y: B.y, lane: B.lane, region: B.region, t: S.t }); if (S.safe.length > 40) S.safe.shift(); }
   if (S.mix) { extendMix(); prune(); }
   else if (B.s > course.endS - 1.5) restart();
 }
@@ -1164,6 +1270,7 @@ let camInit = true;
 const clouds = []; for (let i = 0; i < 26; i++) { const s = new T.Sprite(new T.SpriteMaterial({ map: TEX.cloud, transparent: true, depthWrite: false, fog: false, opacity: 0.9 })); s.userData.k = rnd(0.6, 1); scene.add(s); clouds.push(s); }
 function placeCloud(c, z0, z1) { const sc = rnd(14, 30); c.scale.set(sc, sc / 2, 1); c.position.set(rnd(-1, 1) > 0 ? rnd(14, 70) : -rnd(14, 70), camP.y + rnd(-26, 10), z0 - rnd(0, z1 - z0)); }
 function exprNow() {
+  if (RUN.over) return 'worried';
   if (B.stun > 0) return 'dizzy';
   if (B.script && B.script.cam === 'loop') return 'scream';
   if (B.script) return 'starry';
@@ -1171,6 +1278,7 @@ function exprNow() {
   if (B.heavy > 0) return 'angry';
   if (B.air && B.vy < -9) return 'scream';
   if (B.air) return 'wow';
+  if (RUN.on && RUN.flame < 0.22) return 'worried';
   if (B.v > 21) return 'focus';
   return 'happy';
 }
@@ -1196,7 +1304,8 @@ function render(dt) {
   cm.sph.material.color.set(B.heavy > 0 ? '#8e93ad' : '#ffffff');
   cm.body.visible = !(B.inv > 0 && B.stun <= 0 && Math.sin(S.t * 28) > 0);
   cm.feet.forEach((ft, i) => { const ph = B.phase + i * Math.PI; ft.position.y = 0.06 + (grounded ? Math.max(0, Math.sin(ph)) * 0.06 : 0.08); ft.position.z = grounded ? Math.sin(ph) * 0.13 : -0.04; ft.visible = !B.script; });
-  cm.flames.forEach((fl, i) => { fl.visible = B.heavy <= 0; fl.scale.y = fl.userData.h * (1 + Math.sin(S.t * 16 + i * 2) * 0.2 + (B.boost > 0 ? 0.7 : 0)); });
+  const fk = RUN.on ? 0.3 + 0.95 * clamp(RUN.flame, 0, 1) : 1;
+  cm.flames.forEach((fl, i) => { fl.visible = B.heavy <= 0 && !RUN.over; fl.scale.y = fl.userData.h * fk * (1 + Math.sin(S.t * 16 + i * 2) * (RUN.on && RUN.flame < 0.22 ? 0.45 : 0.2) + (B.boost > 0 ? 0.7 : 0)); fl.scale.x = fl.scale.z = 0.07 * (0.6 + 0.4 * fk); });
   const ex = exprNow(); cm.stars.visible = ex === 'dizzy'; if (cm.stars.visible) cm.stars.rotation.y += dt * 6;
   B.blinkT -= dt; if (B.blinkT < -0.12) B.blinkT = rnd(1.8, 4.2);
   const key = ex + (B.blinkT < 0 ? 'b' : ''); if (key !== cm.key) { cm.key = key; paintCritter(cm, CRIT[0], ex, B.blinkT < 0); }
@@ -1204,7 +1313,7 @@ function render(dt) {
   cm.shadow.visible = !!g; if (g) { const sk = 1 / (1 + (B.y - g.h) * 0.4); cm.shadow.scale.setScalar(0.95 * sk); cm.shadow.position.set(B.x, g.h + 0.03, -B.s); }
   if (B.boost > 0 && Math.random() < 0.5) { ballPos(); _v.set(rnd(-1, 1), rnd(0, 1), 4); spawn('glow', _p, _v, 0.3, 0.45, '#ffb020'); }
   // objects
-  for (const c of coins) if (!c.taken) c.mesh.rotation.y += dt * 3;
+  for (const c of coins) if (!c.taken) { const k = 0.66 + Math.sin(S.t * 7 + c.s) * 0.06; c.mesh.scale.set(k, k * 1.08, 1); }
   for (const h of hoops) h.mesh.rotation.z += dt * 0.6;
   for (const p of pads) if (p.mesh && p.mesh.userData.boing) { p.mesh.userData.boing = Math.max(0, p.mesh.userData.boing - dt * 2.5); const b = p.mesh.userData.boing; const top = p.mesh.userData.top; if (top) top.position.y = (p.kind === 'jump' ? 0.19 : 0) + Math.sin(b * Math.PI) * 0.35 - (p.kind === 'button' ? b * 0.1 : 0); }
   for (const b of bars) { const k = clamp(1 - (S.t - b.hitT) * 4, 0, 1); b.mesh.position.y = b.mesh.userData.y0 === undefined ? (b.mesh.userData.y0 = b.mesh.position.y) : b.mesh.userData.y0 - k * 0.08; if (b.good) b.mesh.material.emissiveIntensity = 0.35 + k * 0.6; }
@@ -1248,6 +1357,14 @@ function updHud(force) {
     if (S.mix && show !== S.piece) { S.piece = show; markCards(); }
   }
   $('coins').textContent = S.coins;
+  $('flame').hidden = !RUN.on; $('score').hidden = !RUN.on; $('mult').hidden = !RUN.on;
+  if (RUN.on) {
+    $('flameFill').style.width = (clamp(RUN.flame, 0, 1) * 100) + '%';
+    $('flameTxt').textContent = Math.round(RUN.lastS - RUN.s0) + ' m';
+    $('flame').classList.toggle('low', !RUN.over && RUN.flame < 0.22);
+    $('score').textContent = Math.round(RUN.score);
+    const mu = $('mult'); mu.textContent = 'x' + RUN.mult; mu.classList.toggle('x1', RUN.mult === 1);
+  }
   const lp = pc && pc.loop;
   const sp = $('speed'); sp.hidden = !(lp && B.s < lp && B.s > pc.s0 + 2 && !B.script);
   if (!sp.hidden) { const f = $('speedFill'); f.style.width = (clamp(B.v / 28, 0, 1) * 100) + '%'; f.className = B.v >= VLOOP ? '' : 'low'; $('speedMark').style.left = (VLOOP / 28 * 100) + '%'; }
@@ -1271,6 +1388,8 @@ function setWatch(w) {
   updHud(true);
 }
 $('bWatch').addEventListener('click', () => { startAudio(); setWatch(true); restart(); });
+$('oAgain').addEventListener('click', () => { startAudio(); setWatch(false); restart(); stage.focus({ preventScroll: true }); });
+$('oWatch').addEventListener('click', () => { startAudio(); setWatch(true); restart(); });
 $('bTry').addEventListener('click', () => { startAudio(); setWatch(false); restart(); stage.focus({ preventScroll: true }); });
 $('bMix').addEventListener('click', () => { startAudio(); S.mix = true; $('bMix').setAttribute('aria-pressed', 'true'); restart(); stage.focus({ preventScroll: true }); });
 
@@ -1291,7 +1410,8 @@ for (const id of ORDER) {
   const ds = document.createElement('span'); ds.className = 'desc'; ds.textContent = P.desc;
   const ks = document.createElement('span'); ks.className = 'keys';
   for (const [k, t] of P.keys) { const s = document.createElement('span'); s.className = 'k'; const bb = document.createElement('b'); bb.textContent = k; s.append(bb, ' ' + t); ks.appendChild(s); }
-  play.append(top, nm, ds, ks);
+  const wy = document.createElement('span'); wy.className = 'why'; const wb = document.createElement('strong'); wb.textContent = 'Why go there: '; wy.append(wb, P.why);
+  play.append(top, nm, ds, wy, ks);
   play.addEventListener('click', () => { startAudio(); S.mix = false; $('bMix').setAttribute('aria-pressed', 'false'); S.piece = id; restart(); stage.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
   const votes = document.createElement('div'); votes.className = 'votes'; votes.setAttribute('role', 'group'); votes.setAttribute('aria-label', 'Vote on ' + P.name);
   for (const v of ['love', 'maybe', 'drop']) { const b = document.createElement('button'); b.type = 'button'; b.className = 'vote'; b.dataset.v = v; b.id = 'v-' + id + '-' + v; b.textContent = VLAB[v]; b.addEventListener('click', () => vote(id, v)); votes.appendChild(b); }
@@ -1363,7 +1483,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function boot() {
-  resize(); load('drop'); for (const c of clouds) placeCloud(c, 40, -220);
+  resize(); load('drop', true); for (const c of clouds) placeCloud(c, 40, -220);
   $('loading').hidden = true; requestAnimationFrame(frame);
 }
 (document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve()).then(boot);
