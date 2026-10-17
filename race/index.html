@@ -175,6 +175,7 @@ body{font:600 16px/1.5 var(--body)}
         <div><p class="lbl">Track</p><div class="tracks" id="tracks"></div></div>
         <div class="opts">
           <div><p class="lbl">Laps</p><div class="chips" id="laps"></div></div>
+          <div><p class="lbl">Bots</p><div class="chips" id="diffOpt"></div></div>
           <div><p class="lbl">Steering</p><div class="chips" id="steerOpt"></div></div>
           <div><p class="lbl">Ghost DJ</p><div class="chips" id="ghostOpt"></div></div>
           <button class="go" id="goBtn" type="button">RACE!</button>
@@ -1031,10 +1032,10 @@ app.addEventListener('pointermove', e => { if (!swipe || swipe.done) return; con
 app.addEventListener('pointerup', () => { if (swipe && !swipe.done && performance.now() - swipe.t < 260) TOUCH.q = 'b'; swipe = null; });
 
 // ---------- game state ----------
-const S = { phase: 'lobby', t: 0, raceT: 0, countT: 0, laps: 3, track: 0, ghostOn: true, lanes: true, slots: [], racers: [], views: [], humans: 0, finishN: 0, endT: 0, attract: true, ghost: null, firstFinish: null };
+const S = { phase: 'lobby', t: 0, raceT: 0, countT: 0, laps: 3, track: 0, ghostOn: true, lanes: true, diff: 1, slots: [], racers: [], views: [], humans: 0, finishN: 0, endT: 0, attract: true, ghost: null, firstFinish: null };
 S.slots.push({ scheme: COARSE ? 'touch' : 'keys', crit: 0 });
-try { const o = JSON.parse(localStorage.getItem('fb-race-opts') || '{}'); if (typeof o.lanes === 'boolean') S.lanes = o.lanes; if ([2, 3, 5].includes(o.laps)) S.laps = o.laps; if (typeof o.ghostOn === 'boolean') S.ghostOn = o.ghostOn; } catch (e) {}
-function saveOpts() { try { localStorage.setItem('fb-race-opts', JSON.stringify({ lanes: S.lanes, laps: S.laps, ghostOn: S.ghostOn })); } catch (e) {} }
+try { const o = JSON.parse(localStorage.getItem('fb-race-opts') || '{}'); if (typeof o.lanes === 'boolean') S.lanes = o.lanes; if ([2, 3, 5].includes(o.laps)) S.laps = o.laps; if (typeof o.ghostOn === 'boolean') S.ghostOn = o.ghostOn; if ([0, 1, 2].includes(o.diff)) S.diff = o.diff; } catch (e) {}
+function saveOpts() { try { localStorage.setItem('fb-race-opts', JSON.stringify({ lanes: S.lanes, laps: S.laps, ghostOn: S.ghostOn, diff: S.diff })); } catch (e) {} }
 function mkRacer(ci, slot, pi) {
   const c = CRIT[ci];
   return { ci, c, name: c.name, human: slot >= 0, slot, pi, cm: buildCritter(c, pi), s: 0, x: 0, y: 0, vx: 0, kx: 0, v: 0, vy: 0, air: false, state: 'race', fallT: 0, inv: 0, dashT: 0, dashCD: 0, stun: 0, boost: 0, mega: 0, scale: 1, lastHit: null, lastHitT: -9, kos: 0, falls: 0, finished: 0, place: 0, skill: 1, aggr: 0.5, tx: 0, think: 0, expr: 'happy', exprT: 0, smugT: 0, cheerT: 0, yaw: 0, phase: rnd(6), blinkT: rnd(1, 3), land: 0, wp: V3(), f: newF(), lookBack: false, lane: 0, laneLock: false, lastDir: 0, input: { steer: 0, jump: false, bump: false } };
@@ -1053,7 +1054,8 @@ function setupRace(ti, attract) {
   humans.forEach((h, i) => { const r = mkRacer(h.crit, i, i); r.scheme = h.scheme; S.racers.push(r); });
   const free = [0, 1, 2, 3, 4, 5].filter(i => !used.has(i)).sort(() => Math.random() - 0.5);
   const skills = [1.02, 1.0, 0.98, 0.96, 0.95, 0.93].sort(() => Math.random() - 0.5);
-  while (S.racers.length < NRACERS) { const r = mkRacer(free.shift(), -1, -1); r.skill = skills[S.racers.length]; r.aggr = rnd(0.3, 0.9); S.racers.push(r); }
+  const DF = DIFF[S.diff], prefs = DF.prefs.slice().sort(() => Math.random() - 0.5);
+  while (S.racers.length < NRACERS) { const r = mkRacer(free.shift(), -1, -1); r.skill = 1 + (skills[S.racers.length] - 0.975) * 0.6; r.aggr = rnd(DF.aggr[0], DF.aggr[1]); r.pref = prefs.pop(); S.racers.push(r); }
   // grid: humans at the back rows so they have someone to bump, bots in front
   const hs0 = S.racers.filter(r => r.human), bs0 = S.racers.filter(r => !r.human);
   const order = [...bs0.slice(0, 2), ...hs0, ...bs0.slice(2)];
@@ -1067,6 +1069,8 @@ function setupRace(ti, attract) {
   app.classList.toggle('p1', S.humans === 1);
   $('touch').hidden = !(S.humans === 1 && S.slots[0].scheme === 'touch'); app.classList.toggle('touchmode', !$('touch').hidden);
 }
+// Bots: Easy keeps most of them just behind you, Hard puts most of them ahead and makes them pushier
+const DIFF = [{ name: 'Easy', prefs: [6, 1, -3, -6, -10], aggr: [0.3, 0.6], rest: 6, catchup: 4 }, { name: 'Normal', prefs: [10, 5, 1, -3, -7], aggr: [0.45, 0.95], rest: 4, catchup: 3 }, { name: 'Hard', prefs: [14, 9, 5, 1, -4], aggr: [0.7, 1.1], rest: 2.5, catchup: 2 }];
 function skyTex(c) { return canvasTex(4, 256, (g) => { const lg = g.createLinearGradient(0, 0, 0, 256); lg.addColorStop(0, c[0]); lg.addColorStop(0.55, c[1]); lg.addColorStop(1, c[2]); g.fillStyle = lg; g.fillRect(0, 0, 4, 256); }); }
 
 // ---------- physics ----------
@@ -1113,7 +1117,7 @@ function botInput(r, dt) {
   let steer = clamp((tx - r.x) * 0.9 - (r.vx + r.kx) * 0.13, -1, 1), bump = false;
   if (r.dashCD <= 0 && S.phase === 'race') {
     let best = null, bs = 0;
-    for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0 || (o.human && S.t - (r.hitHumanT || -9) < 4)) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 1.4 && Math.abs(dx) > 0.7 && Math.abs(dx) < 2.6) { const edge = Math.abs(o.x) / HW(o.s); const sc = edge + (o.human ? 0.3 : 0) + (o.wobbleT > 0 && !o.human ? 0.6 : 0); if (sc > bs) { bs = sc; best = o; } } }
+    for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0 || (o.human && S.t - (r.hitHumanT || -9) < DIFF[S.diff].rest)) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 1.4 && Math.abs(dx) > 0.7 && Math.abs(dx) < 2.6) { const edge = Math.abs(o.x) / HW(o.s); const sc = edge + (o.human ? 0.3 : 0) + (o.wobbleT > 0 && !o.human ? 0.6 : 0); if (sc > bs) { bs = sc; best = o; } } }
     if (best && Math.random() < r.aggr * dt * (2.5 + bs * 4)) { steer = Math.sign(best.x - r.x); bump = true; }
   }
   return { steer, jump, bump, tx };
@@ -1168,12 +1172,12 @@ function stepRacer(r, dt) {
   if (racing) {
     const lead = S.leadS !== undefined ? S.leadS : r.s;
     let band = 0;
-    if (r.human) band = clamp((lead - r.s) * 0.06, 0, 5);
+    if (r.human) band = clamp((lead - r.s - 8) * 0.05, 0, DIFF[S.diff].catchup);
     else if (!S.attract && S.humans > 0) {
-      // bots stay around the players: ahead of everyone they ease off, behind they hurry back
+      // bots ride in a moving formation around the nearest player: some lead by a few lengths, some sit beside and behind,
+      // and their spots drift so they keep overtaking. On the last lap the pull weakens so bumps and boosts decide the race.
       let d = 1e9; for (const h of S.racers) if (h.human && !h.finished) { const dd = r.s - h.s; if (Math.abs(dd) < Math.abs(d)) d = dd; }
-      if (d < 1e8) band = d > 0 ? -clamp((d - 3) * 0.22, 0, 9) : clamp((-d - 3) * 0.16, 0, 8);
-      band += Math.sin(S.t * 0.45 + r.ci * 1.7) * 0.9;
+      if (d < 1e8) { const want = r.pref + Math.sin(S.t * 0.25 + r.ci * 1.9) * 5, last = r.s > (S.laps - 1) * TRK.N; band = clamp((want - d) * 0.35, -6, 6) * (last ? 0.55 : 1); }
     } else band = clamp((lead - r.s) * 0.035, 0, 3);
     target = VBASE * (r.human ? 1 : r.skill) + band + (r.mega > 0 ? 2 : 0);
     if (r.finished) target = 14;
@@ -1698,6 +1702,8 @@ function renderLobby() {
   });
   const lp = $('laps'); lp.textContent = '';
   for (const n of [2, 3, 5]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = n + ' laps'; c.setAttribute('aria-pressed', String(S.laps === n)); c.onclick = () => { S.laps = n; saveOpts(); renderLobby(); }; lp.appendChild(c); }
+  const df = $('diffOpt'); df.textContent = '';
+  DIFF.forEach((d, i) => { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = d.name; c.setAttribute('aria-pressed', String(S.diff === i)); c.onclick = () => { S.diff = i; saveOpts(); renderLobby(); }; df.appendChild(c); });
   const st = $('steerOpt'); st.textContent = '';
   for (const [v, t] of [[true, 'Lanes'], [false, 'Free']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.lanes === v)); c.onclick = () => { S.lanes = v; saveOpts(); renderLobby(); }; st.appendChild(c); }
   const go = $('ghostOpt'); go.textContent = '';
