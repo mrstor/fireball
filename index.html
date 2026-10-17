@@ -1146,7 +1146,7 @@ function updGhost(dt) {
   for (const r of S.racers) {
     if (r.state !== 'race' || r.inv > 0 || r.y > 1.6 || (r.ghostT && S.t - r.ghostT < 1.5)) continue;
     const ds = wrapD(r.s - g.s), dx = r.x - g.x;
-    if (Math.abs(ds) < 1.0 && Math.abs(dx) < 1.15) {
+    if (Math.abs(ds) < 0.85 && Math.abs(dx) < 0.95) {
       r.ghostT = S.t; const side = Math.abs(dx) < 0.15 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
       if (S.lanes) { r.lane = Math.round(r.x / LS) + side; if (Math.abs(r.lane) > laneMax(r.s) || r.wobbleT > 0) { r.kx = side * 12; r.laneLock = true; } else { r.kx = side * 4; r.laneLock = false; } }
       else r.kx = side * (r.wobbleT > 0 ? 13 : 9) / (r.mega > 0 ? 3 : 1);
@@ -1165,12 +1165,12 @@ function updGhost(dt) {
   const k = { wave: 2, squint: tgt && bd < 12 ? 0.4 : 0.1, sq: 0, rz: Math.sin(S.t * 3) * 0.08 };
   if (g.laughT > 0) { k.rz = Math.sin(S.t * 22) * 0.16; k.squint = 0.5; k.wave = 3; }
   const F = newF(); frameAt(g.s, F);
-  GH.root.visible = GH.shadow.visible = true; GH.root.scale.setScalar(0.85 * appear);
-  GH.root.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.95 * appear + Math.sin(S.t * 4) * 0.08); orient(GH.root, F); GH.root.rotateY(Math.PI);
+  GH.root.visible = GH.shadow.visible = true; GH.root.scale.setScalar(0.52 * appear);
+  GH.root.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.62 * appear + Math.sin(S.t * 4) * 0.06); orient(GH.root, F); GH.root.rotateY(Math.PI);
   GH.anim(dt, S.t, k);
-  GH.shadow.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.04); orient(GH.shadow, F); GH.shadow.rotateX(-Math.PI / 2); GH.shadow.scale.setScalar(2.2 * appear);
+  GH.shadow.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.04); orient(GH.shadow, F); GH.shadow.rotateX(-Math.PI / 2); GH.shadow.scale.setScalar(1.4 * appear);
   if (Math.random() < 0.4) spawn('glow', GH.root.position, V3().set(rnd(-1, 1), rnd(0, 1.5), rnd(-1, 1)), 0.5, 0.5, '#ff9cf0');
-  if (GH.ring.visible) { g.ringT += dt; const kk = g.ringT / 0.45; frameAt(g.ringS, F); GH.ring.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.ringS) + 0.4); orient(GH.ring, F); GH.ring.rotateX(Math.PI / 2); GH.ring.scale.setScalar(0.6 + kk * 3); GH.ring.material.opacity = Math.max(0, 0.9 * (1 - kk)); if (kk >= 1) GH.ring.visible = false; }
+  if (GH.ring.visible) { g.ringT += dt; const kk = g.ringT / 0.45; frameAt(g.ringS, F); GH.ring.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.ringS) + 0.4); orient(GH.ring, F); GH.ring.rotateX(Math.PI / 2); GH.ring.scale.setScalar(0.4 + kk * 2); GH.ring.material.opacity = Math.max(0, 0.9 * (1 - kk)); if (kk >= 1) GH.ring.visible = false; }
 }
 // ---------- race flow ----------
 function step(dt) {
