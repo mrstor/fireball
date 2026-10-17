@@ -836,7 +836,8 @@ for (let i = 0; i < 4; i++) SCHEMES['pad' + i] = { label: 'Gamepad ' + (i + 1) +
 const TOUCH = { l: false, r: false, j: false, b: false };
 const prevBtn = {};
 const anyKey = list => list.some(k => KEYS[k]);
-function readPad(i) { const pads = navigator.getGamepads ? navigator.getGamepads() : []; return pads && pads[i] ? pads[i] : null; }
+function getPads() { try { return navigator.getGamepads ? Array.from(navigator.getGamepads()) : []; } catch (e) { return []; } }
+function readPad(i) { const pads = getPads(); return pads[i] || null; }
 function rawInput(scheme) {
   const sc = SCHEMES[scheme]; let l = false, r = false, j = false, b = false, ax = 0;
   if (scheme === 'touch') { l = TOUCH.l; r = TOUCH.r; j = TOUCH.j; b = TOUCH.b; const q = TOUCH.q; if (q) { TOUCH.q = null; if (q === 'l') l = true; if (q === 'r') r = true; if (q === 'j') j = true; if (q === 'b') b = true; } }
@@ -907,8 +908,8 @@ function setupRace(ti, attract) {
   for (const o of TRK.orbs) { o.t = 0; o.mesh.visible = true; }
   S.leadS = undefined;
   S.humans = humans.length; S.finishN = 0; S.endT = 0; S.raceT = 0; S.countT = 0; S.firstFinish = null;
-  S.ghost = { s: 30, x: 0, h: 7, state: 'roam', t: 0, next: rnd(9, 12), target: 0, laughT: 0 };
-  GH.root.visible = GH.shadow.visible = S.ghostOn; GH.warn.visible = GH.ring.visible = false;
+  S.ghost = { active: false, wait: rnd(10, 16), s: 0, x: 0, tx: 0, t: 0, out: 0, laughT: 0, ringT: 0, ringS: 0 };
+  GH.root.visible = GH.shadow.visible = false; GH.warn.visible = GH.ring.visible = false;
   buildViews(); buildMinimap();
   app.classList.toggle('p1', S.humans === 1);
   $('touch').hidden = !(S.humans === 1 && S.slots[0].scheme === 'touch'); app.classList.toggle('touchmode', !$('touch').hidden);
@@ -937,7 +938,7 @@ function startFall(r) {
   vpop(r, 'OFF THE TRACK', 'red');
 }
 function respawn(r) {
-  r.state = 'race'; r.inv = 1.6; r.air = true; r.y = 3.5; r.lane = 0; r.laneLock = false; r.vy = 0; r.vx = 0; r.kx = 0; r.x = 0; r.v = 9; r.stun = 0; r.mega = 0; r.lastHit = null; r.dashT = 0;
+  r.state = 'race'; r.inv = 1.6; r.air = true; r.y = 3.5; r.lane = 0; r.laneLock = false; r.wobbleT = 0; r.vy = 0; r.vx = 0; r.kx = 0; r.x = 0; r.v = 9; r.stun = 0; r.mega = 0; r.lastHit = null; r.dashT = 0;
   if (gapAt(r.s) || gapAt(r.s - 4)) { let k = 0; while ((gapAt(r.s) || TRK.ramp[iAt(r.s)] > 0) && k++ < 40) r.s += 1; r.s += 2; }
   r.cm.root.visible = true;
 }
@@ -948,12 +949,12 @@ function botInput(r, dt) {
   let tx = r.tx;
   for (const o of TRK.obs) { const d = wrapD(o.s - r.s); if (d > 1 && d < 13 && Math.abs(o.x - tx) < o.r + 1.0) tx = o.x + (o.x > 0 ? -1 : 1) * (o.r + 1.4); }
   for (const o of TRK.orbs) { const d = wrapD(o.s - r.s); if (o.t <= 0 && d > 2 && d < 18 && r.aggr > 0.5) tx = o.x; }
-  const g = S.ghost; if (S.ghostOn && g && (g.state === 'aim' || g.state === 'slam')) { const d = wrapD(g.target - r.s); if (d > -4 && d < 22) tx *= 0.25; }
+  const g = S.ghost; if (S.ghostOn && g && g.active && r.dodge) { const d = wrapD(g.s - r.s); if (d > 0 && d < 26 && Math.abs(g.x - tx) < 1.8) tx = g.x + (g.x > 0 ? -2.3 : 2.3); }
   tx = clamp(tx, -hw + 1.1, hw - 1.1);
   let steer = clamp((tx - r.x) * 0.9 - (r.vx + r.kx) * 0.13, -1, 1), bump = false;
   if (r.dashCD <= 0 && S.phase === 'race') {
     let best = null, bs = 0;
-    for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 1.4 && Math.abs(dx) > 0.7 && Math.abs(dx) < 2.6) { const edge = Math.abs(o.x) / HW(o.s); const sc = edge + (o.human ? 0.15 : 0); if (sc > bs) { bs = sc; best = o; } } }
+    for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 1.4 && Math.abs(dx) > 0.7 && Math.abs(dx) < 2.6) { const edge = Math.abs(o.x) / HW(o.s); const sc = edge + (o.human ? 0.15 : 0) + (o.wobbleT > 0 ? 0.6 : 0); if (sc > bs) { bs = sc; best = o; } } }
     if (best && Math.random() < r.aggr * dt * (1.5 + bs * 4)) { steer = Math.sign(best.x - r.x); bump = true; }
   }
   return { steer, jump: false, bump, tx };
@@ -968,18 +969,22 @@ function laneInput(r, d, jump, bump, bot) {
   const canDash = bump && r.dashCD <= 0;
   if (d && !r.laneLock) { r.lane += d; r.lastDir = d; }
   let bdir = 0;
-  if (canDash) { bdir = d || r.lastDir || (r.x > 0 ? -1 : 1); if (!d) r.lane += bdir; r.laneLock = false; }
+  if (canDash) { bdir = d || nearestRivalSide(r) || r.lastDir || (r.x > 0 ? -1 : 1); if (!d) r.lane += bdir; r.laneLock = false; }
   r.lane = clamp(r.lane, -lm, lm);
   const steer = r.laneLock ? 0 : clamp((r.lane * LS - r.x) * 2.6 - r.vx * 0.12, -1, 1);
   return { steer, jump, bump: canDash, bdir, tx: r.laneLock ? undefined : r.lane * LS };
 }
 function dash(r, dir) {
   const lane = S.lanes;
-  r.dashT = lane ? 0.12 : 0.2; r.dashCD = 1.1; r.vx = dir * (lane ? 13 : 17); r.expr = 'angry'; r.exprT = 0.5;
+  r.dashT = lane ? 0.14 : 0.2; r.dashCD = 0.9; r.vx = dir * (lane ? 13 : 17);
+  // lock onto the critter beside you, so a bump does not need pixel-perfect timing
+  let best = null, bd = 1e9; const reach = lane ? 2.0 : 2.7;
+  for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0 || Math.abs(o.y - r.y) > 1.2) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 2.2 && Math.sign(dx) === dir && Math.abs(dx) > 0.15 && Math.abs(dx) < reach) { const d = Math.abs(ds) + Math.abs(dx) * 0.5; if (d < bd) { bd = d; best = o; } } }
+  r.dashTarget = best; r.expr = 'angry'; r.exprT = 0.5;
   if (audible(r)) sfx2('dash', r.human ? 0.9 : 0.4);
 }
 function stepRacer(r, dt) {
-  r.inv = Math.max(0, r.inv - dt); r.stun = Math.max(0, r.stun - dt); r.boost = Math.max(0, r.boost - dt); r.dashCD = Math.max(0, r.dashCD - dt); r.smugT = Math.max(0, r.smugT - dt); r.cheerT = Math.max(0, r.cheerT - dt);
+  r.inv = Math.max(0, r.inv - dt); r.wobbleT = Math.max(0, (r.wobbleT || 0) - dt); r.stun = Math.max(0, r.stun - dt); r.boost = Math.max(0, r.boost - dt); r.dashCD = Math.max(0, r.dashCD - dt); r.smugT = Math.max(0, r.smugT - dt); r.cheerT = Math.max(0, r.cheerT - dt);
   if (r.mega > 0) { r.mega -= dt; if (r.mega <= 0) vpop(r, 'BACK TO NORMAL', 'blue'); }
   r.scale = lerp(r.scale, r.mega > 0 ? 1.75 : 1, Math.min(1, dt * 6));
   if (r.state === 'fall') { r.fallT += dt; r.vy -= GRAV * dt; r.y += r.vy * dt; r.x += (r.vx + r.kx) * dt; r.s += r.v * 0.3 * dt; if (r.fallT > 1.35) respawn(r); return; }
@@ -987,11 +992,15 @@ function stepRacer(r, dt) {
   const inp = r.input;
   // steering
   const steer = r.stun > 0 ? inp.steer * 0.25 : inp.steer;
-  if (r.dashT > 0) r.dashT -= dt;
+  if (r.dashT > 0) {
+    r.dashT -= dt;
+    const tg = r.dashTarget;
+    if (tg && tg.state === 'race') { r.s += clamp(wrapD(tg.s - r.s), -1.5, 1.5) * Math.min(1, dt * 14); if (Math.abs(tg.x - r.x) < R * (r.scale + tg.scale) * 1.15) bumpHit(r, tg, Math.sign(r.vx) || 1); }
+  }
   else if (S.lanes && inp.tx !== undefined) r.vx = clamp((inp.tx - r.x) * 16, -13, 13) * (r.stun > 0 ? 0.3 : 1);
   else { const vmaxX = 9.5; r.vx += steer * 40 * dt; r.vx *= Math.exp(-(steer ? 2.0 : 6) * dt); r.vx = clamp(r.vx, -vmaxX, vmaxX); }
   r.kx = clamp(r.kx, -14, 14) * Math.exp(-2.6 * dt);
-  if (inp.bump && r.dashCD <= 0 && racing) dash(r, inp.bdir || (steer !== 0 ? Math.sign(steer) : (r.x > 0 ? -1 : 1)));
+  if (inp.bump && r.dashCD <= 0 && racing) dash(r, inp.bdir || (steer !== 0 ? Math.sign(steer) : nearestRivalSide(r) || (r.x > 0 ? -1 : 1)));
   if (S.lanes && Math.abs(r.kx) > 3) r.laneLock = true;
   // forward speed with a mild catch-up for whoever is behind
   let target = 0;
@@ -1043,6 +1052,31 @@ function stepRacer(r, dt) {
   const lap = Math.floor(Math.max(0, r.s) / TRK.N) + 1;
   if (r.human && lap !== r.lapShown && lap > 1 && lap <= S.laps) { r.lapShown = lap; vpop(r, lap === S.laps ? 'FINAL LAP' : 'LAP ' + lap, 'green'); sfx('lap', 0.7); }
 }
+// The one bump rule, used by dash collisions and by the dash lock-on.
+function bumpHit(hitter, victim, side) {
+  const mh = hitter.mega > 0 ? 3.5 : 1, mv = victim.mega > 0 ? 3.5 : 1, wobbly = victim.wobbleT > 0;
+  hitter.dashT = 0; hitter.vx = 0; hitter.dashTarget = null; hitter.noHit = victim; hitter.noHitT = S.t + 0.4;
+  if (mv > mh) { if (S.lanes) hitter.lane = Math.round(hitter.x / LS) - side; hitter.kx = -side * 6; hitter.stun = 0.4; if (hitter.human) vpop(hitter, 'BOING!', 'red', 'they are too big'); }
+  else {
+    const off = wobbly || mh > mv;
+    if (S.lanes) {
+      victim.lane = Math.round(victim.x / LS) + side;
+      if (off || Math.abs(victim.lane) > laneMax(victim.s)) { victim.kx = side * 12; victim.laneLock = true; } else { victim.kx = side * 3; victim.laneLock = false; }
+    } else { victim.kx = victim.kx * 0.3 + side * (off ? 14 : BUMPK); hitter.kx = -side * 1.5; }
+    victim.vx = 0; victim.stun = 0.35; victim.wobbleT = 2.5; victim.expr = 'dizzy'; victim.exprT = 0.8; victim.lastHit = hitter; victim.lastHitT = S.t;
+    if (hitter.human) vpop(hitter, wobbly ? 'KNOCK OFF!' : 'BUMP!', '', wobbly ? '' : 'bump again to knock them off');
+    if (victim.human && !wobbly) vpop(victim, 'WOBBLY!', 'red', 'one more bump and you are off');
+  }
+  if (audible(hitter) || audible(victim)) { sfx('bump', hitter.human || victim.human ? 1 : 0.5); sfx('bonk', hitter.human || victim.human ? 0.5 : 0.2); }
+  const mid = V3().addVectors(hitter.wp, victim.wp).multiplyScalar(0.5);
+  for (let k = 0; k < 9; k++) spawn('star', mid, V3().set(rnd(-3, 3), rnd(2, 5), rnd(-3, 3)), rnd(0.4, 0.7), rnd(0.25, 0.4));
+  for (const v of S.views) if (v.r === hitter || v.r === victim) v.shake = Math.max(v.shake, 0.35);
+}
+function nearestRivalSide(r) {
+  let best = 0, bd = 1e9;
+  for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 2.4 && Math.abs(dx) > 0.2 && Math.abs(dx) < 3) { const d = Math.abs(ds) + Math.abs(dx) * 0.6; if (d < bd) { bd = d; best = Math.sign(dx); } } }
+  return best;
+}
 function collide() {
   const rs = S.racers;
   for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
@@ -1058,30 +1092,16 @@ function collide() {
     let hitter = null, victim = null;
     if (a.dashT > 0 && Math.sign(a.vx) === Math.sign(nx)) { hitter = a; victim = b; } else if (b.dashT > 0 && Math.sign(b.vx) === -Math.sign(nx)) { hitter = b; victim = a; }
     const strong = !!hitter;
-    if (hitter) {
-      // a dash hit: the victim flies sideways, the hitter stops dead
-      const side = Math.sign(hitter.vx), mh = hitter.mega > 0 ? 3.5 : 1, mv = victim.mega > 0 ? 3.5 : 1;
-      if (S.lanes) {
-        // lanes: the victim moves exactly one lane over, or off the track from the edge lane
-        if (mv > mh) { hitter.lane = Math.round(hitter.x / LS) - side; hitter.kx = -side * 4; }
-        else { victim.lane = Math.round(victim.x / LS) + side * (mh > mv ? 2 : 1); if (Math.abs(victim.lane) > laneMax(victim.s)) { victim.kx = side * 11; victim.laneLock = true; } else { victim.kx = side * 3; victim.laneLock = false; } victim.vx = 0; victim.stun = 0.3; }
-        hitter.dashT = 0; hitter.vx = 0; hitter.noHit = victim; hitter.noHitT = S.t + 0.4;
-      } else {
-        victim.kx = victim.kx * 0.3 + side * BUMPK * Math.min(2.2, mh / mv); victim.vx = 0; victim.stun = 0.35;
-        hitter.dashT = 0; hitter.vx = 0; hitter.kx = -side * 1.5 * Math.min(1, mv / mh);
-      }
-      victim.expr = 'dizzy'; victim.exprT = 0.8;
-      if (hitter.human) vpop(hitter, 'BUMP!', '');
-    } else if (rv < 0) {
+    if (hitter) { bumpHit(hitter, victim, Math.sign(hitter.vx) || 1); continue; }
+    if (rv < 0) {
       // ordinary contact: steering speed becomes knock speed, then a bouncy impulse
       if (!S.lanes) { a.kx += a.vx; a.vx = 0; b.kx += b.vx; b.vx = 0; }
       const jj = -(S.lanes ? 0.5 : 1.4) * rv / (1 / ma + 1 / mb);
       a.kx -= jj * nx * LATK / ma; b.kx += jj * nx * LATK / mb; a.v -= jj * ns / ma; b.v += jj * ns / mb;
     }
-    if (Math.abs(rv) > 2 || strong) {
+    if (Math.abs(rv) > 2) {
       a.lastHit = b; a.lastHitT = S.t; b.lastHit = a; b.lastHitT = S.t;
-      if (strong) { victim.lastHit = hitter; victim.lastHitT = S.t; }
-      const loud = clamp(Math.abs(rv) / 10 + (strong ? 0.5 : 0), 0.2, 1);
+      const loud = clamp(Math.abs(rv) / 10, 0.2, 1);
       if (audible(a) || audible(b)) sfx('bump', (a.human || b.human ? 1 : 0.5) * loud);
       const mid = V3().addVectors(a.wp, b.wp).multiplyScalar(0.5);
       for (let k = 0; k < (strong ? 8 : 4); k++) spawn('star', mid, V3().set(rnd(-3, 3), rnd(2, 5), rnd(-3, 3)), rnd(0.4, 0.7), rnd(0.25, 0.4));
@@ -1089,49 +1109,61 @@ function collide() {
     }
   }
 }
+function spawnGhost(g) {
+  const hs = S.racers.filter(r => r.human && !r.finished && r.state === 'race');
+  const pool = hs.length ? hs : S.racers.filter(r => r.state === 'race');
+  const tgt = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null; if (!tgt) { g.wait = 3; return; }
+  g.active = true; g.t = 0; g.s = tgt.s + 75; g.x = rnd(-1, 1); g.tx = g.x; g.laughT = 0; g.out = 0;
+  for (const r of S.racers) r.dodge = Math.random() < 0.75;
+  sfx2('charge', 0.6);
+  for (const r of S.racers) if (r.human && !r.finished) { const d = wrapD(g.s - r.s); if (d > 0 && d < 100) vpop(r, 'GHOST DJ!', 'pink', 'he is coming your way, dodge him'); }
+  if (!S.attract) feed('The <b>Ghost DJ</b> is coming down the track!');
+}
 function updGhost(dt) {
-  const g = S.ghost; if (!S.ghostOn || !g) return;
+  const g = S.ghost;
+  if (!S.ghostOn || !g || !g.active) {
+    GH.root.visible = GH.shadow.visible = false;
+    if (S.ghostOn && g && S.phase === 'race' && S.raceT > 6) { g.wait -= dt; if (g.wait <= 0) spawnGhost(g); }
+    return;
+  }
   g.t += dt; g.laughT = Math.max(0, g.laughT - dt);
-  const lead = S.leadS !== undefined ? S.leadS : 0;
-  const k = { wave: 1, squint: 0, sq: 0, rz: Math.sin(S.t * 0.9) * 0.05 };
-  if (g.laughT > 0) { k.rz = Math.sin(S.t * 22) * 0.16; k.squint = 0.5; k.wave = 2; }
-  if (g.state === 'roam') {
-    const want = lead + 24; g.s += clamp(wrapD(want - g.s), -40, 40) * Math.min(1, dt * 1.5); g.x = Math.sin(g.t * 0.6) * HW(g.s) * 0.5; g.h = lerp(g.h, 6.5 + Math.sin(g.t * 1.4) * 0.4, dt * 3);
-    if (S.phase === 'race' && S.raceT > 4) { g.next -= dt; if (g.next <= 0) { g.state = 'aim'; g.t = 0; g.target = lead + 36 + rnd(8); if (gapAt(g.target)) g.target += 30; sfx2('charge', 0.7); for (const r of S.racers) if (r.human && !r.finished) { const d = wrapD(g.target - r.s); if (d > 0 && d < 70) vpop(r, 'GHOST DJ!', 'pink', 'stay in the middle'); } } }
-  } else if (g.state === 'aim') {
-    g.s += wrapD(g.target - g.s) * Math.min(1, dt * 2.5); g.x = lerp(g.x, 0, dt * 3); g.h = lerp(g.h, 5.2, dt * 3); k.squint = 0.4; k.wave = 2 + g.t; k.sq = -0.08 * Math.min(1, g.t);
-    if (g.t > 1.8) { g.state = 'slam'; g.t = 0; }
-  } else if (g.state === 'slam') {
-    g.h = lerp(5.2, 1.4, sm(g.t / 0.18)); k.sq = 0.25; k.squint = 0.45; k.wave = 3;
-    if (g.t > 0.18) { g.state = 'recover'; g.t = 0; ghostBlast(g); }
-  } else if (g.state === 'recover') {
-    g.h = lerp(1.4, 6.5, sm(g.t / 0.9)); k.sq = 0.25 * (1 - g.t) * Math.cos(g.t * 18); k.wave = 2;
-    if (g.t > 0.9) { g.state = 'roam'; g.t = 0; g.next = rnd(10, 15); }
-  }
-  // place meshes
-  const F = newF(); frameAt(g.s, F);
-  GH.root.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, g.h); orient(GH.root, F); GH.root.rotateY(Math.PI);
-  GH.anim(dt, S.t, k);
-  GH.shadow.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.04); orient(GH.shadow, F); GH.shadow.rotateX(-Math.PI / 2); GH.shadow.scale.setScalar(4.5 / (1 + g.h * 0.15));
-  GH.warn.visible = g.state === 'aim' || g.state === 'slam';
-  if (GH.warn.visible) { frameAt(g.target, F); const w = HW(g.target) * 2 + 1; GH.warn.position.copy(F.p).addScaledVector(F.u, rampAt(g.target) + 0.06); orient(GH.warn, F); GH.warn.rotateX(-Math.PI / 2); const pulse = 1 + Math.sin(S.t * 14) * 0.05; GH.warn.scale.set(w * pulse, w * pulse, 1); GH.warn.material.opacity = 0.55 + 0.4 * Math.abs(Math.sin(S.t * 8)); }
-  if (GH.ring.visible) { g.ringT += dt; const kk = g.ringT / 0.55; frameAt(g.target, F); GH.ring.position.copy(F.p).addScaledVector(F.u, rampAt(g.target) + 0.3); orient(GH.ring, F); GH.ring.rotateX(Math.PI / 2); GH.ring.scale.setScalar(1 + kk * 9); GH.ring.material.opacity = Math.max(0, 0.9 * (1 - kk)); if (kk >= 1) GH.ring.visible = false; }
-}
-function ghostBlast(g) {
-  GH.ring.visible = true; g.ringT = 0; GH.ring.material.opacity = 0.9;
-  const near = S.views.some(v => v.r && Math.abs(wrapD(g.target - v.r.s)) < 50) || S.attract;
-  if (near) sfx2('drop', 0.9);
-  for (const v of S.views) if (v.r && Math.abs(wrapD(g.target - v.r.s)) < 45) v.shake = Math.max(v.shake, 0.5);
+  // fly against the traffic, drifting toward the nearest critter coming at him (players first)
+  g.s -= 11 * dt;
+  let tgt = null, bd = 1e9;
+  for (const r of S.racers) { if (r.state !== 'race') continue; const d = wrapD(g.s - r.s); if (d > 1.5 && d < 45) { const sc = d - (r.human ? 18 : 0); if (sc < bd) { bd = sc; tgt = r; } } }
+  if (tgt) g.tx = tgt.x;
+  const hw = HW(g.s); g.tx = clamp(g.tx, -hw + 0.7, hw - 0.7);
+  g.x += clamp(g.tx - g.x, -2.4 * dt, 2.4 * dt);
+  // who does he touch?
   for (const r of S.racers) {
-    if (r.state !== 'race' || r.y > 1.6) continue;
-    const ds = wrapD(r.s - g.target); if (Math.abs(ds) > 8) continue;
-    const dir = Math.abs(r.x) < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(r.x);
-    r.kx += dir * 13 / (r.mega > 0 ? 3 : 1) * (1 - Math.abs(ds) / 12); r.vy = 5; r.air = true; r.stun = 0.4; r.lastHit = 'ghost'; r.lastHitT = S.t; r.expr = 'scream'; r.exprT = 0.8;
-    if (r.human) vpop(r, 'BASS DROP!', 'pink');
+    if (r.state !== 'race' || r.inv > 0 || r.y > 1.6 || (r.ghostT && S.t - r.ghostT < 1.5)) continue;
+    const ds = wrapD(r.s - g.s), dx = r.x - g.x;
+    if (Math.abs(ds) < 1.0 && Math.abs(dx) < 1.15) {
+      r.ghostT = S.t; const side = Math.abs(dx) < 0.15 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
+      if (S.lanes) { r.lane = Math.round(r.x / LS) + side; if (Math.abs(r.lane) > laneMax(r.s) || r.wobbleT > 0) { r.kx = side * 12; r.laneLock = true; } else { r.kx = side * 4; r.laneLock = false; } }
+      else r.kx = side * (r.wobbleT > 0 ? 13 : 9) / (r.mega > 0 ? 3 : 1);
+      r.vy = 4; r.air = true; r.stun = 0.5; r.wobbleT = 2.5; r.lastHit = 'ghost'; r.lastHitT = S.t; r.expr = 'scream'; r.exprT = 0.9; r.v *= 0.7;
+      if (r.human) vpop(r, 'SPOOKED!', 'pink');
+      g.laughT = 1.2; GH.ring.visible = true; g.ringT = 0; g.ringS = g.s;
+      if (audible(r)) { sfx2('drop', 0.5); setTimeout(() => sfx2('laugh', 0.7), 250); }
+      for (const v of S.views) if (v.r === r) v.shake = 0.45;
+    }
   }
-  if (Math.random() < 0.5) { g.laughT = 1.3; if (near) setTimeout(() => sfx2('laugh', 0.8), 350); }
+  // leave once he is behind everyone
+  let minS = 1e9; for (const r of S.racers) if (r.state === 'race') minS = Math.min(minS, wrapD(r.s - g.s));
+  if (minS > 20 || g.t > 16) g.out += dt;
+  const appear = sm(g.t / 0.5) * (1 - sm(g.out / 0.5));
+  if (g.out > 0.5) { g.active = false; g.wait = rnd(18, 28); GH.root.visible = GH.shadow.visible = false; return; }
+  const k = { wave: 2, squint: tgt && bd < 12 ? 0.4 : 0.1, sq: 0, rz: Math.sin(S.t * 3) * 0.08 };
+  if (g.laughT > 0) { k.rz = Math.sin(S.t * 22) * 0.16; k.squint = 0.5; k.wave = 3; }
+  const F = newF(); frameAt(g.s, F);
+  GH.root.visible = GH.shadow.visible = true; GH.root.scale.setScalar(0.85 * appear);
+  GH.root.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.95 * appear + Math.sin(S.t * 4) * 0.08); orient(GH.root, F); GH.root.rotateY(Math.PI);
+  GH.anim(dt, S.t, k);
+  GH.shadow.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.s) + 0.04); orient(GH.shadow, F); GH.shadow.rotateX(-Math.PI / 2); GH.shadow.scale.setScalar(2.2 * appear);
+  if (Math.random() < 0.4) spawn('glow', GH.root.position, V3().set(rnd(-1, 1), rnd(0, 1.5), rnd(-1, 1)), 0.5, 0.5, '#ff9cf0');
+  if (GH.ring.visible) { g.ringT += dt; const kk = g.ringT / 0.45; frameAt(g.ringS, F); GH.ring.position.copy(F.p).addScaledVector(F.r, g.x).addScaledVector(F.u, rampAt(g.ringS) + 0.4); orient(GH.ring, F); GH.ring.rotateX(Math.PI / 2); GH.ring.scale.setScalar(0.6 + kk * 3); GH.ring.material.opacity = Math.max(0, 0.9 * (1 - kk)); if (kk >= 1) GH.ring.visible = false; }
 }
-
 // ---------- race flow ----------
 function step(dt) {
   S.t += dt;
@@ -1250,11 +1282,11 @@ function updCamera(v, dt) {
   } else {
     // spectator: follow the leader from changing angles
     v.specT -= dt; if (v.specT <= 0) { v.specT = rnd(5, 8); v.specMode = (v.specMode + 1) % 3; v.init = true; }
-    const rk = ranking(), tgt = (v.specMode === 2 && S.ghostOn) ? null : rk[Math.min(rk.length - 1, v.specMode === 1 ? 1 : 0)];
+    const rk = ranking(), tgt = (v.specMode === 2 && S.ghostOn && S.ghost && S.ghost.active) ? null : rk[Math.min(rk.length - 1, v.specMode === 1 ? 1 : 0)];
     if (tgt) {
       if (v.specMode === 1) { frameAt(tgt.s + 7, _F); _tp.copy(_F.p).addScaledVector(_F.r, 1.5).addScaledVector(_F.u, 1.6); _tl.copy(tgt.wp); }
       else { frameAt(tgt.s - 7, _F); _tp.copy(_F.p).addScaledVector(_F.r, Math.sin(S.t * 0.3) * 5).addScaledVector(_F.u, 3.4); _tl.copy(tgt.wp); }
-    } else { frameAt(S.ghost.s - 12, _F); _tp.copy(_F.p).addScaledVector(_F.u, 6); _tl.copy(GH.root.position); }
+    } else { frameAt(S.ghost.s + 9, _F); _tp.copy(_F.p).addScaledVector(_F.u, 3.5); _tl.copy(GH.root.position); }
     v.cam.up.lerp(YV, Math.min(1, dt * 4));
   }
   if (v.init) { v.pos.copy(_tp); v.look.copy(_tl); v.init = false; }
@@ -1272,6 +1304,7 @@ function exprOf(r) {
   if (r.cheerT > 0) return 'cheer';
   if (r.smugT > 0) return 'smug';
   if (r.stun > 0) return 'dizzy';
+  if (r.wobbleT > 0) return 'worried';
   if (r.mega > 0) return 'starry';
   if (r.air && r.vy > 2) return 'wow';
   if (Math.abs(r.x) > HW(r.s) - 0.9 && !railAt(r.s, Math.sign(r.x))) return 'worried';
@@ -1302,7 +1335,7 @@ function updCritter(r, dt) {
   cm.body.scale.set(1 + kq * 0.8, 1 - kq, 1 + kq * 0.8);
   cm.body.position.y = R * (1 - kq) + (grounded ? Math.abs(Math.sin(r.phase)) * 0.05 : 0);
   if (r.state === 'fall') { cm.body.rotation.x += dt * 9; cm.body.rotation.z += dt * 6; }
-  else { cm.body.rotation.x *= 0.85; cm.body.rotation.z = (r.stun > 0 ? Math.sin(S.t * 18) * 0.25 : 0) - clamp((r.vx + r.kx) * 0.035, -0.4, 0.4); }
+  else { cm.body.rotation.x *= 0.85; cm.body.rotation.z = (r.stun > 0 ? Math.sin(S.t * 18) * 0.25 : 0) + (r.wobbleT > 0 ? Math.sin(S.t * 13) * 0.14 * Math.min(1, r.wobbleT) : 0) - clamp((r.vx + r.kx) * 0.035, -0.4, 0.4); }
   cm.feet.forEach((ft, i) => { const ph = r.phase + i * Math.PI; ft.position.y = 0.06 + (grounded ? Math.max(0, Math.sin(ph)) * 0.06 : 0.08); ft.position.z = grounded ? Math.sin(ph) * 0.13 : -0.04; });
   cm.shadow.visible = r.state === 'race' && !gapAt(r.s); cm.shadow.position.y = -r.y + rampAt(r.s) + 0.025; cm.shadow.scale.setScalar(1 / (1 + Math.max(0, r.y - rampAt(r.s)) * 0.4));
   cm.body.visible = !(r.inv > 0 && Math.sin(S.t * 28) > 0);
@@ -1345,7 +1378,7 @@ function buildMinimap() {
 const mmG = $('mmCv').getContext('2d');
 function drawMinimap() {
   if (!MM) return; mmG.clearRect(0, 0, 264, 264); mmG.drawImage(MM.img, 0, 0);
-  if (S.ghostOn) { const [x, y] = MM.pt(GH.root.position); mmG.fillStyle = '#ffffff'; mmG.strokeStyle = INK; mmG.lineWidth = 3; mmG.beginPath(); mmG.arc(x, y, 8, Math.PI, 0); mmG.lineTo(x + 8, y + 8); mmG.lineTo(x - 8, y + 8); mmG.closePath(); mmG.fill(); mmG.stroke(); }
+  if (S.ghostOn && S.ghost && S.ghost.active) { const [x, y] = MM.pt(GH.root.position); mmG.fillStyle = '#ffffff'; mmG.strokeStyle = INK; mmG.lineWidth = 3; mmG.beginPath(); mmG.arc(x, y, 8, Math.PI, 0); mmG.lineTo(x + 8, y + 8); mmG.lineTo(x - 8, y + 8); mmG.closePath(); mmG.fill(); mmG.stroke(); }
   const rs = S.racers.slice().sort((a, b) => (a.human ? 1 : 0) - (b.human ? 1 : 0));
   for (const r of rs) { const [x, y] = MM.pt(r.cm.root.position); mmG.fillStyle = r.c.col; mmG.strokeStyle = r.human ? PCOL[r.pi] : INK; mmG.lineWidth = r.human ? 5 : 3; mmG.beginPath(); mmG.arc(x, y, r.human ? 9 : 7, 0, 7); mmG.fill(); mmG.stroke(); }
 }
@@ -1378,7 +1411,7 @@ function joinSlot(sc) {
   S.slots.push({ scheme: sc, crit: c }); sfx('itemGot', 0.8); renderLobby();
 }
 function nextFreeScheme() {
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean).map(p => 'pad' + p.index) : [];
+  const pads = getPads().filter(Boolean).map(p => 'pad' + p.index);
   for (const sc of [...pads, 'arrows', 'ijkl', 'wasd']) { if (S.slots.some(s => s.scheme === sc)) continue; if (sc === 'wasd' && S.slots.some(s => s.scheme === 'keys')) continue; return sc; }
   return null;
 }
@@ -1389,7 +1422,7 @@ function lobbyKey(code) {
   S.slots.forEach((sl, i) => { const sc = SCHEMES[sl.scheme]; if (!sc.l) return; if (sc.l.includes(code)) cycleCrit(i, -1); if (sc.r.includes(code)) cycleCrit(i, 1); });
 }
 function pollLobbyPads() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const pads = getPads();
   for (const p of pads) {
     if (!p) continue; const id = 'pad' + p.index, e = edgeInput('lobby' + id, id);
     if (e.jump && !S.slots.some(s => s.scheme === id)) { joinSlot(id); continue; }
@@ -1432,7 +1465,7 @@ function renderLobby() {
   const st = $('steerOpt'); st.textContent = '';
   for (const [v, t] of [[true, 'Lanes'], [false, 'Free']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.lanes === v)); c.onclick = () => { S.lanes = v; saveOpts(); renderLobby(); }; st.appendChild(c); }
   const go = $('ghostOpt'); go.textContent = '';
-  for (const [v, t] of [[true, 'On'], [false, 'Off']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.ghostOn === v)); c.onclick = () => { S.ghostOn = v; GH.root.visible = GH.shadow.visible = v; saveOpts(); renderLobby(); }; go.appendChild(c); }
+  for (const [v, t] of [[true, 'On'], [false, 'Off']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.ghostOn === v)); c.onclick = () => { S.ghostOn = v; saveOpts(); renderLobby(); }; go.appendChild(c); }
   const touchHelp = S.lanes ? 'Swipe left or right to switch lanes, swipe up to jump, tap to <b>bump</b> the critter next to you. The buttons work too.' : 'Hold <b>◀ ▶</b> to steer, tap <b>JUMP</b>, tap <b>BUMP</b> to shove the critter next to you.';
   const keyHelp = (S.lanes ? 'Left/right hops a lane · <b>bump</b> shoves the critter next to you a lane over, off the track from the edge lane' : 'Steer freely · <b>bump</b> dashes sideways and shoves whoever you hit') + ' · <b>jump</b> over trouble · <kbd>Enter</kbd> to start · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound';
   $('help').innerHTML = COARSE && S.slots.length === 1 ? touchHelp : keyHelp;
