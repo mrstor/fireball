@@ -482,15 +482,78 @@ function sfx(name, vol = 1) {
     case 'whoosh': noiz(t, 0.25, D, { type: 'bandpass', f: 600, f2: 2200, q: 1.5, vol: 0.09 * v, a: 0.05 }); break;
   }
 }
+// ---------- softer, cartoon sound effects (no square-wave beeps) ----------
+// Building blocks: a pitched blip with a pitch glide, filtered noise, a wooden mallet, and a little formant "voice".
+function blip(type, f0, f1, t, dur, vol, o = {}) {
+  const C = AU.ctx, os = C.createOscillator(), g = C.createGain();
+  os.type = type; os.frequency.setValueAtTime(f0, t); os.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur * (o.glide || 1));
+  if (o.vib) { const l = C.createOscillator(), lg = C.createGain(); l.frequency.value = o.vibF || 7; lg.gain.value = o.vib; l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.1); }
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + (o.a || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  os.connect(g); g.connect(AU.fx); if (o.rev) { const r = C.createGain(); r.gain.value = o.rev; g.connect(r); r.connect(AU.revIn); }
+  os.start(t); os.stop(t + dur + 0.05);
+}
+function hush(t, dur, vol, type, f0, f1, q = 1, a = 0.004) {
+  const C = AU.ctx, src = C.createBufferSource(), fl = C.createBiquadFilter(), g = C.createGain();
+  src.buffer = AU.noise; fl.type = type; fl.Q.value = q; fl.frequency.setValueAtTime(f0, t); if (f1) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(fl); fl.connect(g); g.connect(AU.fx); src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
+}
+function mallet(f, t, vol, dur = 0.35) { blip('sine', f, f * 0.995, t, dur, vol, { rev: 0.25 }); blip('sine', f * 3.98, f * 3.9, t, dur * 0.25, vol * 0.25); blip('triangle', f * 2, f * 2, t, 0.03, vol * 0.3); }
+const VOWEL = { a: [800, 1150, 2900], o: [450, 800, 2830], u: [325, 700, 2530], e: [430, 2000, 2600], i: [300, 2300, 3000] };
+function voice(t, f0, f1, dur, vol, vw = 'a', vib = 0) {
+  const C = AU.ctx, os = C.createOscillator(), out = C.createGain();
+  os.type = 'sawtooth'; os.frequency.setValueAtTime(f0, t); os.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  if (vib) { const l = C.createOscillator(), lg = C.createGain(); l.frequency.value = 6.5; lg.gain.value = vib; l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.1); }
+  VOWEL[vw].forEach((ff, i) => { const bp = C.createBiquadFilter(), g = C.createGain(); bp.type = 'bandpass'; bp.frequency.value = ff; bp.Q.value = 7; g.gain.value = [1, 0.55, 0.2][i]; os.connect(bp); bp.connect(g); g.connect(out); });
+  out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(vol, t + 0.025); out.gain.setValueAtTime(vol, t + dur * 0.6); out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  out.connect(AU.fx); const r = C.createGain(); r.gain.value = 0.15; out.connect(r); r.connect(AU.revIn);
+  os.start(t); os.stop(t + dur + 0.05);
+}
+// each critter has its own voice pitch
+const VPITCH = { Blaze: 340, Kai: 390, Noor: 470, Zeb: 540, Miko: 300, Lou: 255 };
+function cvoice(r, kind, v = 1) {
+  if (!AU.on || !AU.ctx || !r || v <= 0.02) return;
+  const t = AU.ctx.currentTime + 0.01, f = (VPITCH[r.name] || 360) * rnd(0.95, 1.05), vol = 0.5 * v;
+  if (kind === 'hup') voice(t, f * 1.1, f * 1.45, 0.12, vol * 0.6, 'e');
+  if (kind === 'hah') voice(t, f * 1.2, f * 0.95, 0.14, vol * 0.8, 'a');
+  if (kind === 'oof') voice(t, f * 1.1, f * 0.7, 0.18, vol, 'o');
+  if (kind === 'waah') voice(t, f * 1.6, f * 0.55, 0.9, vol, 'a', 18);
+  if (kind === 'yay') { voice(t, f * 1.1, f * 1.5, 0.22, vol, 'e'); voice(t + 0.24, f * 1.4, f * 1.9, 0.3, vol, 'i', 12); }
+  if (kind === 'wee') voice(t, f * 1.3, f * 2.0, 0.35, vol * 0.7, 'i', 10);
+}
 function sfx2(name, v = 1) {
   if (!AU.on || !AU.ctx || v <= 0.02) return;
-  const C = AU.ctx, t = C.currentTime + 0.005, D = AU.fx;
-  if (name === 'dash') noiz(t, 0.18, D, { type: 'bandpass', f: 900, f2: 2600, q: 1.4, vol: 0.18 * v, a: 0.02 });
-  if (name === 'charge') { noiz(t, 1.2, D, { type: 'bandpass', f: 300, f2: 3800, q: 2, vol: 0.16 * v, a: 0.9 }); const o = tone('sawtooth', 55, t, 1.2, D, { vol: 0.1 * v, cut: 300, cutEnv: 2400, d: 1, sus: 0.8, vib: 6, vibF: 9 }); o.os.frequency.exponentialRampToValueAtTime(110, t + 1.2); }
-  if (name === 'drop') { DR.kick(t, 1.3 * v); const o = tone('sine', 90, t, 0.9, D, { vol: 0.45 * v, d: 0.8, sus: 0.3 }); o.os.frequency.exponentialRampToValueAtTime(32, t + 0.9); noiz(t, 0.8, D, { type: 'lowpass', f: 1600, f2: 60, vol: 0.45 * v }); }
-  if (name === 'laugh') { const fl = C.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = 900; fl.Q.value = 3; fl.connect(D); for (let i = 0; i < 5; i++) { const f = 250 - i * 18, o = tone('sawtooth', f, t + i * 0.15, 0.1, fl, { vol: 0.4 * v, a: 0.01, d: 0.08, sus: 0.4, rel: 0.04, vib: 12, vibF: 30 }); o.os.frequency.exponentialRampToValueAtTime(f * 0.8, t + i * 0.15 + 0.1); } }
-  if (name === 'boing') { const o = tone('sine', 300, t, 0.3, D, { vol: 0.25 * v, d: 0.25, sus: 0.2, vib: 25, vibF: 16 }); o.os.frequency.exponentialRampToValueAtTime(900, t + 0.12); o.os.frequency.exponentialRampToValueAtTime(400, t + 0.3); }
+  const C = AU.ctx, t = C.currentTime + 0.005;
+  switch (name) {
+    case 'bump': blip('sine', 190, 70, t, 0.2, 0.45 * v); blip('triangle', 340, 160, t, 0.09, 0.18 * v); hush(t, 0.09, 0.3 * v, 'lowpass', 700); break;
+    case 'bonk': mallet(560, t, 0.28 * v, 0.2); hush(t, 0.05, 0.25 * v, 'bandpass', 1900, null, 8); blip('sine', 240, 120, t, 0.15, 0.25 * v); break;
+    case 'jump': hush(t, 0.13, 0.12 * v, 'bandpass', 700, 2400, 1.5, 0.02); blip('sine', 380, 720, t, 0.12, 0.12 * v); break;
+    case 'land': hush(t, 0.14, 0.32 * v, 'lowpass', 380); blip('sine', 110, 48, t, 0.14, 0.3 * v); break;
+    case 'whoosh': case 'dash': hush(t, 0.28, 0.2 * v, 'bandpass', 420, 1900, 1.2, 0.06); break;
+    case 'boost': hush(t, 0.45, 0.18 * v, 'bandpass', 500, 3200, 1.4, 0.05); [1319, 1760, 2093].forEach((f, i) => blip('sine', f, f, t + 0.05 + i * 0.05, 0.25, 0.05 * v, { rev: 0.4 })); break;
+    case 'mega': blip('sine', 110, 440, t, 0.6, 0.35 * v, { vib: 25, vibF: 9, glide: 0.8 }); [523, 659, 784, 1047].forEach((f, i) => mallet(f, t + 0.08 + i * 0.07, 0.12 * v)); break;
+    case 'boing': blip('sine', 220, 760, t, 0.32, 0.3 * v, { vib: 30, vibF: 14, glide: 0.35 }); hush(t, 0.05, 0.15 * v, 'lowpass', 900); break;
+    case 'count': mallet(587, t, 0.3 * v); break;
+    case 'go': [784, 988, 1175].forEach(f => mallet(f, t, 0.22 * v, 0.6)); hush(t, 0.4, 0.08 * v, 'highpass', 5000); break;
+    case 'lap': [659, 784, 988].forEach((f, i) => mallet(f, t + i * 0.09, 0.18 * v)); break;
+    case 'finish': [784, 988, 1175, 1568].forEach((f, i) => mallet(f, t + i * 0.1, 0.2 * v, 0.5)); break;
+    case 'cheer': {
+      for (let i = 0; i < 14; i++) hush(t + rnd(0.7), 0.05, rnd(0.08, 0.16) * v, 'bandpass', rnd(1200, 2400), null, 1.5);
+      for (let i = 0; i < 4; i++) voice(t + rnd(0.3), rnd(300, 520), rnd(500, 800), 0.35, 0.12 * v, i % 2 ? 'e' : 'i', 10);
+      [1047, 1319, 1568].forEach((f, i) => mallet(f, t + 0.1 + i * 0.08, 0.1 * v)); break;
+    }
+    case 'join': blip('sine', 600, 1150, t, 0.12, 0.25 * v); mallet(1175, t + 0.08, 0.12 * v); break;
+    case 'fall': blip('triangle', 1300, 260, t, 1.2, 0.08 * v, { vib: 9, vibF: 6 }); break;
+    // the Ghost DJ: a hollow "oooOOO" voice, a deep soft boom, a breathy cackle
+    case 'charge': voice(t, 160, 230, 1.1, 0.25 * v, 'u', 14); voice(t, 240, 330, 1.1, 0.12 * v, 'o', 10); break;
+    case 'drop': blip('sine', 80, 34, t, 0.7, 0.55 * v); hush(t, 0.5, 0.3 * v, 'lowpass', 900, 80); break;
+    case 'laugh': for (let i = 0; i < 5; i++) voice(t + i * 0.14, 300 - i * 18, 260 - i * 18, 0.11, 0.3 * v, 'a', 20); break;
+  }
 }
+// route the shared sfx() names through the softer set; anything unknown falls back to the old synth
+{ const base = sfx; sfx = (name, v = 1) => { const map = { bump: 1, bonk: 1, jump: 1, land: 1, whoosh: 1, boost: 1, mega: 1, count: 1, go: 1, lap: 1, finish: 1, cheer: 1, fall: 1 }; if (map[name]) sfx2(name, v); else if (name === 'itemGot') sfx2('join', v); else if (name !== 'scream') base(name, v); }; }
+// softer instruments for the music: mallets and triangles instead of square and saw leads
+for (const k in SONGS) { const sg = SONGS[k]; sg.bass.type = 'triangle'; sg.bass.cut = Math.max(sg.bass.cut, 900); sg.bass.vol *= 1.3; if (sg.stab) { sg.stab.type = 'triangle'; sg.stab.vol *= 1.4; } if (sg.arp) { sg.arp.type = 'triangle'; sg.arp.vol *= 1.5; } if (sg.lead.type !== 'bell') { sg.lead.type = k === 'neon' ? 'triangle' : 'bell'; sg.lead.vol = k === 'neon' ? 0.07 : 0.085; } if (sg.hv) sg.hv *= 0.7; }
 
 // ---------- three.js ----------
 const app = $('app'), glc = $('gl');
@@ -930,7 +993,7 @@ const audible = r => r.human || S.attract || S.views.some(v => v.r && Math.abs(w
 function startFall(r) {
   if (r.state !== 'race') return;
   r.state = 'fall'; r.fallT = 0; r.falls++; r.air = true; r.expr = 'scream';
-  if (audible(r)) sfx('scream', r.human ? 0.9 : 0.5);
+  if (audible(r)) { cvoice(r, 'waah', r.human ? 0.9 : 0.5); sfx('fall', r.human ? 0.7 : 0.3); }
   const by = r.lastHit && S.t - r.lastHitT < 3 ? r.lastHit : null;
   if (by === 'ghost') { feed(`The Ghost DJ blasted ${who(r)} off!`); if (S.ghost) S.ghost.laughT = 1.2; }
   else if (by) { by.kos++; by.smugT = 2; feed(`${who(by)} knocked ${who(r)} off!`); vpop(by, 'KNOCKOUT!', '', r.name + ' is off'); if (by.human && !S.attract) sfx('cheer', 0.7); }
@@ -1024,9 +1087,9 @@ function stepRacer(r, dt) {
   const onGap = gapAt(r.s), rh = rampAt(r.s);
   if (!r.air) {
     if (onGap) { r.air = true; r.vy = 0; }
-    else { r.y = rh; if (TRK.launch[iAt(r.s)] && r.v > 6) { r.air = true; r.vy = 10; r.launched = true; } }
+    else { r.y = rh; if (TRK.launch[iAt(r.s)] && r.v > 6) { r.air = true; r.vy = 10; r.launched = true; if (audible(r)) cvoice(r, 'wee', r.human ? 0.8 : 0.3); } }
   }
-  if (inp.jump && !r.air && racing) { r.air = true; r.vy = 8.5; if (audible(r)) sfx('jump', r.human ? 0.8 : 0.3); }
+  if (inp.jump && !r.air && racing) { r.air = true; r.vy = 8.5; if (audible(r)) { sfx('jump', r.human ? 0.8 : 0.3); cvoice(r, 'hup', r.human ? 0.8 : 0.3); } }
   if (r.air) {
     r.vy -= GRAV * dt; r.y += r.vy * dt;
     if (!onGap && r.y <= rh && r.vy <= 0) { if (r.vy < -9) { r.land = 1; if (audible(r)) sfx('land', r.human ? 0.6 : 0.25); } r.y = rh; r.vy = 0; r.air = false; }
@@ -1054,7 +1117,7 @@ function stepRacer(r, dt) {
   // lap and finish
   if (!S.attract && !r.finished && r.s >= S.laps * TRK.N) {
     r.finished = S.raceT; r.place = ++S.finishN; if (!S.firstFinish) S.firstFinish = S.raceT;
-    if (r.human) { vpop(r, ord(r.place) + '!', r.place === 1 ? '' : 'blue', 'finished'); sfx(r.place <= 3 ? 'cheer' : 'finish', 0.8); r.cheerT = 3; }
+    if (r.human) { vpop(r, ord(r.place) + '!', r.place === 1 ? '' : 'blue', 'finished'); sfx(r.place <= 3 ? 'cheer' : 'finish', 0.8); if (r.place <= 3) cvoice(r, 'yay', 0.9); r.cheerT = 3; }
     if (r.place === 1) feed(`${who(r)} wins the race!`);
   }
   const lap = Math.floor(Math.max(0, r.s) / TRK.N) + 1;
@@ -1075,7 +1138,7 @@ function bumpHit(hitter, victim, side) {
     if (hitter.human) vpop(hitter, wobbly ? 'KNOCK OFF!' : 'BUMP!', '', wobbly ? '' : 'bump again to knock them off');
     if (victim.human && !wobbly) vpop(victim, 'WOBBLY!', 'red', 'one more bump and you are off');
   }
-  if (audible(hitter) || audible(victim)) { sfx('bump', hitter.human || victim.human ? 1 : 0.5); sfx('bonk', hitter.human || victim.human ? 0.5 : 0.2); }
+  if (audible(hitter) || audible(victim)) { const lv = hitter.human || victim.human ? 1 : 0.45; sfx('bump', lv); cvoice(hitter, 'hah', lv * 0.7); cvoice(victim, 'oof', lv); }
   const mid = V3().addVectors(hitter.wp, victim.wp).multiplyScalar(0.5);
   for (let k = 0; k < 9; k++) spawn('star', mid, V3().set(rnd(-3, 3), rnd(2, 5), rnd(-3, 3)), rnd(0.4, 0.7), rnd(0.25, 0.4));
   for (const v of S.views) if (v.r === hitter || v.r === victim) v.shake = Math.max(v.shake, 0.35);
