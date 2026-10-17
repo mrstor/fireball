@@ -1008,6 +1008,14 @@ function stepRacer(r, dt) {
     const lead = S.leadS !== undefined ? S.leadS : r.s, gapB = clamp((lead - r.s) * 0.035, 0, 3);
     target = VBASE * (r.human ? 1 : r.skill) + gapB + (r.mega > 0 ? 2 : 0);
     if (r.finished) target = 14;
+    // slipstream: tuck in right behind someone in your line and you speed up; the boost lingers a moment after you pull out
+    let draft = false;
+    for (const o of S.racers) { if (o === r || o.state !== 'race') continue; const ds = wrapD(o.s - r.s); if (ds > 1.0 && ds < 9 && Math.abs(o.x - r.x) < 0.85) { draft = true; break; } }
+    r.draftT = draft ? Math.min(1.2, (r.draftT || 0) + dt) : Math.max(0, (r.draftT || 0) - dt * 0.6);
+    r.slip = clamp((r.draftT - 0.3) / 0.4, 0, 1);
+    if (r.slip >= 1 && !r.slipShown) { r.slipShown = true; if (r.human) { vpop(r, 'SLIPSTREAM!', 'blue', 'pull out and pass'); sfx('whoosh', 0.7); } }
+    if (r.draftT === 0) r.slipShown = false;
+    target += r.slip * 5;
     if (r.boost > 0) target = 32; if (r.stun > 0) target = Math.min(target, 9);
   }
   r.v += (target - r.v) * (r.v < target ? 1.1 : 2.4) * dt;
@@ -1309,7 +1317,7 @@ function exprOf(r) {
   if (r.air && r.vy > 2) return 'wow';
   if (Math.abs(r.x) > HW(r.s) - 0.9 && !railAt(r.s, Math.sign(r.x))) return 'worried';
   if (r.lookBack) return 'worried';
-  if (r.boost > 0) return 'focus';
+  if (r.boost > 0 || r.slip > 0.5) return 'focus';
   return S.phase === 'race' ? 'focus' : 'happy';
 }
 function updCritter(r, dt) {
@@ -1349,6 +1357,7 @@ function updCritter(r, dt) {
   if (r.dashT > 0 && Math.random() < 0.6) spawn('puff', r.wp, V3().copy(f.r).multiplyScalar(-Math.sign(r.vx) * 3).addScaledVector(f.t, r.v * 0.6), 0.35, 0.35);
   if (r.mega > 0 && Math.random() < 0.3) spawn('glow', r.wp, V3().set(rnd(-1, 1), rnd(0, 2), rnd(-1, 1)), 0.4, 0.6, '#ff9cf0');
   if (r.boost > 0 && Math.random() < 0.5) spawn('glow', r.wp, V3().copy(f.t).multiplyScalar(r.v * 0.5), 0.3, 0.5, '#ffb020');
+  if (r.slip > 0.3 && Math.random() < (r.human ? 0.9 : 0.35)) { const side = Math.random() < 0.5 ? -1 : 1; const p0 = V3().copy(r.wp).addScaledVector(f.t, rnd(1.5, 3)).addScaledVector(f.r, side * rnd(0.5, 0.9)).addScaledVector(f.u, rnd(-0.3, 0.5)); spawn('glow', p0, V3().copy(f.t).multiplyScalar(-14), 0.25, 0.22, '#dff6ff'); }
 }
 function updHud() {
   const rk = ranking();
