@@ -175,6 +175,7 @@ body{font:600 16px/1.5 var(--body)}
         <div><p class="lbl">Track</p><div class="tracks" id="tracks"></div></div>
         <div class="opts">
           <div><p class="lbl">Laps</p><div class="chips" id="laps"></div></div>
+          <div><p class="lbl">Steering</p><div class="chips" id="steerOpt"></div></div>
           <div><p class="lbl">Ghost DJ</p><div class="chips" id="ghostOpt"></div></div>
           <button class="go" id="goBtn" type="button">RACE!</button>
         </div>
@@ -528,7 +529,7 @@ TEX.checker.magFilter = T.NearestFilter;
 
 // ---------- looks and tracks ----------
 const LOOKS = {
-  ember: { song: 'arcade', sky: ['#24307a', '#7a4aa8', '#ffa070'], fog: '#f2a6ae', hemi: ['#fff2f6', '#6a4aa0', 1.05], dir: ['#fff1d6', 0.75], a: '#f1e9ff', b: '#c9b6f5', line: '#6f55d6', side: '#4a3896', curbA: '#ff4d6d', curbB: '#ffffff', rail: '#ffc23d', bump: '#3fe0ff', pillar: '#ff4d6d', sea: '#f6c2d6', props: 'cloud', card: '#7a4aa8' },
+  ember: { song: 'arcade', sky: ['#24307a', '#7a4aa8', '#ffa070'], fog: '#f2a6ae', hemi: ['#fff2f6', '#6a4aa0', 1.05], dir: ['#fff1d6', 0.75], a: '#f4ecff', b: '#b9a2f0', line: '#5a3fc8', side: '#4a3896', curbA: '#ff4d6d', curbB: '#ffffff', rail: '#ffc23d', bump: '#3fe0ff', pillar: '#ff4d6d', sea: '#f6c2d6', props: 'cloud', card: '#7a4aa8' },
   neon: { song: 'neon', sky: ['#05010f', '#2a0a55', '#ff2bd6'], fog: '#2a0a4a', hemi: ['#c9a8ff', '#2a0f55', 1.3], dir: ['#ff9cf0', 0.6], a: '#1a0f3d', b: '#231550', line: '#00f0ff', side: '#2a0f55', curbA: '#ff2bd6', curbB: '#ffffff', rail: '#00f0ff', bump: '#ffe600', pillar: '#ff2bd6', sea: '#12062a', props: 'tower', card: '#2a0a55' },
   candy: { song: 'candy', sky: ['#ff8fc4', '#ffc6e2', '#fff3f9'], fog: '#ffe0ef', hemi: ['#ffffff', '#ff9cc9', 1.05], dir: ['#fffbe8', 0.7], a: '#ff6fae', b: '#fff2f8', line: '#ffffff', side: '#b9744a', curbA: '#ff3b6b', curbB: '#ffffff', rail: '#4fd6b0', bump: '#4fd6b0', pillar: '#ff3b6b', sea: '#ffd3e8', props: 'lolly', card: '#ff6fae' },
 };
@@ -588,10 +589,10 @@ function orient(obj, f) { _left.copy(f.r).negate(); _m4.makeBasis(_left, f.u, f.
 
 function topTex(look) {
   return canvasTex(256, 256, (g, w, h) => {
-    if (look.props === 'tower') { g.fillStyle = look.a; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(0,240,255,0.35)'; g.lineWidth = 3; for (let k = 0; k <= 256; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.stroke(); g.beginPath(); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); } }
-    else if (look.props === 'lolly') { g.fillStyle = look.b; g.fillRect(0, 0, w, h); g.fillStyle = look.a; for (let k = -2; k < 6; k++) { g.beginPath(); g.moveTo(k * 64, 0); g.lineTo(k * 64 + 32, 0); g.lineTo(k * 64 + 32 + 128, h); g.lineTo(k * 64 + 128, h); g.closePath(); g.fill(); } }
-    else { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? look.a : look.b; g.fillRect(i * 64, j * 64, 64, 64); } }
-    g.fillStyle = look.line; g.globalAlpha = 0.55; g.fillRect(0, 0, 4, h); g.globalAlpha = 1;
+    if (look.props === 'tower') { g.fillStyle = look.a; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(0,240,255,0.45)'; g.lineWidth = 4; for (let k = 0; k <= 256; k += 128) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.stroke(); g.beginPath(); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); } }
+    else if (look.props === 'lolly') { g.fillStyle = look.b; g.fillRect(0, 0, w, h); g.fillStyle = look.a; for (let k = -2; k < 6; k++) { g.beginPath(); g.moveTo(k * 64, 0); g.lineTo(k * 64 + 32, 0); g.lineTo(k * 64 + 32 + 128, h); g.lineTo(k * 64 + 128, h); g.closePath(); g.fill(); } g.fillStyle = '#ffffff'; for (const x of [0, 128]) for (let y = 0; y < h; y += 64) g.fillRect(x - 4, y + 10, 8, 34); }
+    else { for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { g.fillStyle = (i + j) % 2 ? look.a : look.b; g.fillRect(i * 128, j * 128, 128, 128); } }
+    g.fillStyle = look.line; g.globalAlpha = 0.8; for (const x of [0, 128]) for (let y = 0; y < h; y += 64) g.fillRect(x - 3, y + 10, 6, 34); g.globalAlpha = 1;
   }, true);
 }
 function buildTrack(ti) {
@@ -643,7 +644,7 @@ function buildTrackMeshes(D) {
   const at = (i, x, y) => P[i].clone().addScaledVector(Rt[i], x).addScaledVector(Up[i], y);
   // top surface
   { const nx = 8, Pos = [], Uv = [], Idx = [];
-    for (let i = 0; i <= N; i++) { const k = i % N; for (let j = 0; j <= nx; j++) { const x = -hw[k] + 2 * hw[k] * j / nx, v = at(k, x, ramp[k]); Pos.push(v.x, v.y, v.z); Uv.push((x + 8) / 2.6, i / 3); } }
+    for (let i = 0; i <= N; i++) { const k = i % N; for (let j = 0; j <= nx; j++) { const x = -hw[k] + 2 * hw[k] * j / nx, v = at(k, x, ramp[k]); Pos.push(v.x, v.y, v.z); Uv.push((x + LS / 2) / (LS * 2), i / 3); } }
     for (let i = 0; i < N; i++) { if (gap[i % N] || gap[(i + 1) % N]) continue; for (let j = 0; j < nx; j++) { const a = i * (nx + 1) + j, b = a + 1, c = a + nx + 1, d = c + 1; Idx.push(a, b, c, b, d, c); } }
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(Pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(Uv, 2)); g.setIndex(Idx); g.computeVertexNormals();
     grp.add(new T.Mesh(g, toon('#ffffff', { map: topTex(look), side: T.DoubleSide }))); }
@@ -838,8 +839,8 @@ const anyKey = list => list.some(k => KEYS[k]);
 function readPad(i) { const pads = navigator.getGamepads ? navigator.getGamepads() : []; return pads && pads[i] ? pads[i] : null; }
 function rawInput(scheme) {
   const sc = SCHEMES[scheme]; let l = false, r = false, j = false, b = false, ax = 0;
-  if (scheme === 'touch') { l = TOUCH.l; r = TOUCH.r; j = TOUCH.j; b = TOUCH.b; }
-  else if (sc.pad !== undefined) { const p = readPad(sc.pad); if (p) { ax = Math.abs(p.axes[0] || 0) > 0.25 ? p.axes[0] : 0; l = !!(p.buttons[14] && p.buttons[14].pressed); r = !!(p.buttons[15] && p.buttons[15].pressed); j = !!(p.buttons[0] && p.buttons[0].pressed); b = !!((p.buttons[1] && p.buttons[1].pressed) || (p.buttons[2] && p.buttons[2].pressed) || (p.buttons[5] && p.buttons[5].pressed)); } }
+  if (scheme === 'touch') { l = TOUCH.l; r = TOUCH.r; j = TOUCH.j; b = TOUCH.b; const q = TOUCH.q; if (q) { TOUCH.q = null; if (q === 'l') l = true; if (q === 'r') r = true; if (q === 'j') j = true; if (q === 'b') b = true; } }
+  else if (sc.pad !== undefined) { const p = readPad(sc.pad); if (p) { ax = Math.abs(p.axes[0] || 0) > 0.25 ? p.axes[0] : 0; l = !!(p.buttons[14] && p.buttons[14].pressed) || ax < -0.5; r = !!(p.buttons[15] && p.buttons[15].pressed) || ax > 0.5; if (l || r) ax = 0; j = !!(p.buttons[0] && p.buttons[0].pressed); b = !!((p.buttons[1] && p.buttons[1].pressed) || (p.buttons[2] && p.buttons[2].pressed) || (p.buttons[5] && p.buttons[5].pressed)); } }
   else { l = anyKey(sc.l); r = anyKey(sc.r); j = anyKey(sc.j); b = anyKey(sc.b); }
   return { steer: clamp(ax + (r ? 1 : 0) - (l ? 1 : 0), -1, 1), j, b, l, r };
 }
@@ -871,13 +872,19 @@ for (const b of document.querySelectorAll('.tb')) {
   b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
 }
 const COARSE = matchMedia('(pointer: coarse)').matches;
+let swipe = null;
+app.addEventListener('pointerdown', e => { if (!app.classList.contains('touchmode') || e.target.closest('.tb,.ov,button')) return; swipe = { x: e.clientX, y: e.clientY, t: performance.now(), done: false }; });
+app.addEventListener('pointermove', e => { if (!swipe || swipe.done) return; const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y; if (Math.hypot(dx, dy) > 26) { swipe.done = true; TOUCH.q = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'l' : 'r') : (dy < 0 ? 'j' : 'b'); } });
+app.addEventListener('pointerup', () => { if (swipe && !swipe.done && performance.now() - swipe.t < 260) TOUCH.q = 'b'; swipe = null; });
 
 // ---------- game state ----------
-const S = { phase: 'lobby', t: 0, raceT: 0, countT: 0, laps: 3, track: 0, ghostOn: true, slots: [], racers: [], views: [], humans: 0, finishN: 0, endT: 0, attract: true, ghost: null, firstFinish: null };
+const S = { phase: 'lobby', t: 0, raceT: 0, countT: 0, laps: 3, track: 0, ghostOn: true, lanes: true, slots: [], racers: [], views: [], humans: 0, finishN: 0, endT: 0, attract: true, ghost: null, firstFinish: null };
 S.slots.push({ scheme: COARSE ? 'touch' : 'keys', crit: 0 });
+try { const o = JSON.parse(localStorage.getItem('fb-race-opts') || '{}'); if (typeof o.lanes === 'boolean') S.lanes = o.lanes; if ([2, 3, 5].includes(o.laps)) S.laps = o.laps; if (typeof o.ghostOn === 'boolean') S.ghostOn = o.ghostOn; } catch (e) {}
+function saveOpts() { try { localStorage.setItem('fb-race-opts', JSON.stringify({ lanes: S.lanes, laps: S.laps, ghostOn: S.ghostOn })); } catch (e) {} }
 function mkRacer(ci, slot, pi) {
   const c = CRIT[ci];
-  return { ci, c, name: c.name, human: slot >= 0, slot, pi, cm: buildCritter(c, pi), s: 0, x: 0, y: 0, vx: 0, kx: 0, v: 0, vy: 0, air: false, state: 'race', fallT: 0, inv: 0, dashT: 0, dashCD: 0, stun: 0, boost: 0, mega: 0, scale: 1, lastHit: null, lastHitT: -9, kos: 0, falls: 0, finished: 0, place: 0, skill: 1, aggr: 0.5, tx: 0, think: 0, expr: 'happy', exprT: 0, smugT: 0, cheerT: 0, yaw: 0, phase: rnd(6), blinkT: rnd(1, 3), land: 0, wp: V3(), f: newF(), lookBack: false, input: { steer: 0, jump: false, bump: false } };
+  return { ci, c, name: c.name, human: slot >= 0, slot, pi, cm: buildCritter(c, pi), s: 0, x: 0, y: 0, vx: 0, kx: 0, v: 0, vy: 0, air: false, state: 'race', fallT: 0, inv: 0, dashT: 0, dashCD: 0, stun: 0, boost: 0, mega: 0, scale: 1, lastHit: null, lastHitT: -9, kos: 0, falls: 0, finished: 0, place: 0, skill: 1, aggr: 0.5, tx: 0, think: 0, expr: 'happy', exprT: 0, smugT: 0, cheerT: 0, yaw: 0, phase: rnd(6), blinkT: rnd(1, 3), land: 0, wp: V3(), f: newF(), lookBack: false, lane: 0, laneLock: false, lastDir: 0, input: { steer: 0, jump: false, bump: false } };
 }
 function clearRacers() { for (const r of S.racers) disposeCritter(r.cm); S.racers = []; }
 function setupRace(ti, attract) {
@@ -896,7 +903,7 @@ function setupRace(ti, attract) {
   while (S.racers.length < NRACERS) { const r = mkRacer(free.shift(), -1, -1); r.skill = skills[S.racers.length]; r.aggr = rnd(0.3, 0.9); S.racers.push(r); }
   // grid: humans at the back rows so they have someone to bump, bots in front
   const order = S.racers.slice().sort((a, b) => (a.human ? 1 : 0) - (b.human ? 1 : 0));
-  order.forEach((r, k) => { const row = Math.floor(k / 2); r.s = -2.5 - row * 2.6; r.x = (k % 2 ? 1 : -1) * Math.min(1.3, TRK.hw[TRK.s0] * 0.45); r.y = 0; r.v = 0; });
+  order.forEach((r, k) => { const row = Math.floor(k / 2); r.s = -2.5 - row * 2.6; r.x = (k % 2 ? 1 : -1) * LS; r.lane = k % 2 ? 1 : -1; r.y = 0; r.v = 0; });
   for (const o of TRK.orbs) { o.t = 0; o.mesh.visible = true; }
   S.leadS = undefined;
   S.humans = humans.length; S.finishN = 0; S.endT = 0; S.raceT = 0; S.countT = 0; S.firstFinish = null;
@@ -930,7 +937,7 @@ function startFall(r) {
   vpop(r, 'OFF THE TRACK', 'red');
 }
 function respawn(r) {
-  r.state = 'race'; r.inv = 1.6; r.air = true; r.y = 3.5; r.vy = 0; r.vx = 0; r.kx = 0; r.x = 0; r.v = 9; r.stun = 0; r.mega = 0; r.lastHit = null; r.dashT = 0;
+  r.state = 'race'; r.inv = 1.6; r.air = true; r.y = 3.5; r.lane = 0; r.laneLock = false; r.vy = 0; r.vx = 0; r.kx = 0; r.x = 0; r.v = 9; r.stun = 0; r.mega = 0; r.lastHit = null; r.dashT = 0;
   if (gapAt(r.s) || gapAt(r.s - 4)) { let k = 0; while ((gapAt(r.s) || TRK.ramp[iAt(r.s)] > 0) && k++ < 40) r.s += 1; r.s += 2; }
   r.cm.root.visible = true;
 }
@@ -949,10 +956,26 @@ function botInput(r, dt) {
     for (const o of S.racers) { if (o === r || o.state !== 'race' || o.inv > 0) continue; const ds = wrapD(o.s - r.s), dx = o.x - r.x; if (Math.abs(ds) < 1.4 && Math.abs(dx) > 0.7 && Math.abs(dx) < 2.6) { const edge = Math.abs(o.x) / HW(o.s); const sc = edge + (o.human ? 0.15 : 0); if (sc > bs) { bs = sc; best = o; } } }
     if (best && Math.random() < r.aggr * dt * (1.5 + bs * 4)) { steer = Math.sign(best.x - r.x); bump = true; }
   }
-  return { steer, jump: false, bump };
+  return { steer, jump: false, bump, tx };
+}
+const LS = 1.3;
+const laneMax = s => Math.max(0, Math.floor((HW(s) - 0.55) / LS));
+// Lane mode: left/right hop one lane, bump dashes one lane over; a hard knock moves you to wherever you land
+function laneInput(r, d, jump, bump, bot) {
+  const lm = laneMax(r.s + 3);
+  if (r.laneLock && Math.abs(r.kx) < 1.5) { r.laneLock = false; r.lane = Math.round(r.x / LS); }
+  if (bot) { if (bump) d = Math.sign(bot.steer); else if (!r.laneLock) r.lane = Math.round(bot.tx / LS); }
+  const canDash = bump && r.dashCD <= 0;
+  if (d && !r.laneLock) { r.lane += d; r.lastDir = d; }
+  let bdir = 0;
+  if (canDash) { bdir = d || r.lastDir || (r.x > 0 ? -1 : 1); if (!d) r.lane += bdir; r.laneLock = false; }
+  r.lane = clamp(r.lane, -lm, lm);
+  const steer = r.laneLock ? 0 : clamp((r.lane * LS - r.x) * 2.6 - r.vx * 0.12, -1, 1);
+  return { steer, jump, bump: canDash, bdir, tx: r.laneLock ? undefined : r.lane * LS };
 }
 function dash(r, dir) {
-  r.dashT = 0.2; r.dashCD = 1.1; r.vx = dir * 17; r.expr = 'angry'; r.exprT = 0.5;
+  const lane = S.lanes;
+  r.dashT = lane ? 0.12 : 0.2; r.dashCD = 1.1; r.vx = dir * (lane ? 13 : 17); r.expr = 'angry'; r.exprT = 0.5;
   if (audible(r)) sfx2('dash', r.human ? 0.9 : 0.4);
 }
 function stepRacer(r, dt) {
@@ -965,9 +988,11 @@ function stepRacer(r, dt) {
   // steering
   const steer = r.stun > 0 ? inp.steer * 0.25 : inp.steer;
   if (r.dashT > 0) r.dashT -= dt;
+  else if (S.lanes && inp.tx !== undefined) r.vx = clamp((inp.tx - r.x) * 16, -13, 13) * (r.stun > 0 ? 0.3 : 1);
   else { const vmaxX = 9.5; r.vx += steer * 40 * dt; r.vx *= Math.exp(-(steer ? 2.0 : 6) * dt); r.vx = clamp(r.vx, -vmaxX, vmaxX); }
-  r.kx *= Math.exp(-2.6 * dt);
-  if (inp.bump && r.dashCD <= 0 && racing && !r.finishedLock) dash(r, steer !== 0 ? Math.sign(steer) : (r.x > 0 ? -1 : 1));
+  r.kx = clamp(r.kx, -14, 14) * Math.exp(-2.6 * dt);
+  if (inp.bump && r.dashCD <= 0 && racing) dash(r, inp.bdir || (steer !== 0 ? Math.sign(steer) : (r.x > 0 ? -1 : 1)));
+  if (S.lanes && Math.abs(r.kx) > 3) r.laneLock = true;
   // forward speed with a mild catch-up for whoever is behind
   let target = 0;
   if (racing) {
@@ -1024,6 +1049,7 @@ function collide() {
     const a = rs[i], b = rs[j];
     if (a.state !== 'race' || b.state !== 'race' || a.inv > 0 || b.inv > 0) continue;
     if (Math.abs(a.y - b.y) > 0.9) continue;
+    if ((a.noHit === b || b.noHit === a) && S.t < Math.max(a.noHitT || 0, b.noHitT || 0)) continue;
     const ds = wrapD(b.s - a.s), dx = b.x - a.x, min = R * (a.scale + b.scale);
     const d2 = ds * ds + dx * dx; if (d2 >= min * min) continue;
     const d = Math.sqrt(d2) || 0.01, nx = dx / d, ns = ds / d, ma = a.mega > 0 ? 3.5 : 1, mb = b.mega > 0 ? 3.5 : 1, ov = min - d;
@@ -1035,14 +1061,21 @@ function collide() {
     if (hitter) {
       // a dash hit: the victim flies sideways, the hitter stops dead
       const side = Math.sign(hitter.vx), mh = hitter.mega > 0 ? 3.5 : 1, mv = victim.mega > 0 ? 3.5 : 1;
-      victim.kx = victim.kx * 0.3 + side * BUMPK * Math.min(2.2, mh / mv); victim.vx = 0; victim.stun = 0.35;
-      hitter.dashT = 0; hitter.vx = 0; hitter.kx = -side * 1.5 * Math.min(1, mv / mh);
+      if (S.lanes) {
+        // lanes: the victim moves exactly one lane over, or off the track from the edge lane
+        if (mv > mh) { hitter.lane = Math.round(hitter.x / LS) - side; hitter.kx = -side * 4; }
+        else { victim.lane = Math.round(victim.x / LS) + side * (mh > mv ? 2 : 1); if (Math.abs(victim.lane) > laneMax(victim.s)) { victim.kx = side * 11; victim.laneLock = true; } else { victim.kx = side * 3; victim.laneLock = false; } victim.vx = 0; victim.stun = 0.3; }
+        hitter.dashT = 0; hitter.vx = 0; hitter.noHit = victim; hitter.noHitT = S.t + 0.4;
+      } else {
+        victim.kx = victim.kx * 0.3 + side * BUMPK * Math.min(2.2, mh / mv); victim.vx = 0; victim.stun = 0.35;
+        hitter.dashT = 0; hitter.vx = 0; hitter.kx = -side * 1.5 * Math.min(1, mv / mh);
+      }
       victim.expr = 'dizzy'; victim.exprT = 0.8;
       if (hitter.human) vpop(hitter, 'BUMP!', '');
     } else if (rv < 0) {
       // ordinary contact: steering speed becomes knock speed, then a bouncy impulse
-      a.kx += a.vx; a.vx = 0; b.kx += b.vx; b.vx = 0;
-      const jj = -(1.4) * rv / (1 / ma + 1 / mb);
+      if (!S.lanes) { a.kx += a.vx; a.vx = 0; b.kx += b.vx; b.vx = 0; }
+      const jj = -(S.lanes ? 0.5 : 1.4) * rv / (1 / ma + 1 / mb);
       a.kx -= jj * nx * LATK / ma; b.kx += jj * nx * LATK / mb; a.v -= jj * ns / ma; b.v += jj * ns / mb;
     }
     if (Math.abs(rv) > 2 || strong) {
@@ -1107,8 +1140,10 @@ function step(dt) {
   if (S.phase === 'race' || S.phase === 'done') S.raceT += dt;
   // inputs
   for (const r of S.racers) {
-    if (r.human && !r.finished && !S.attract) { const e = edgeInput('r' + r.pi, r.scheme); r.input = { steer: e.steer, jump: e.jump, bump: e.bump }; }
-    else r.input = (S.phase === 'race' || S.phase === 'done') ? botInput(r, dt) : { steer: 0, jump: false, bump: false };
+    const go = S.phase === 'race' || S.phase === 'done';
+    if (r.human && !r.finished && !S.attract) { const e = edgeInput('r' + r.pi, r.scheme); r.input = S.lanes ? (go ? laneInput(r, e.left ? -1 : e.right ? 1 : 0, e.jump, e.bump, null) : { steer: 0 }) : { steer: e.steer, jump: e.jump, bump: e.bump }; }
+    else if (go) { const bi = botInput(r, dt); r.input = S.lanes ? laneInput(r, 0, bi.jump, bi.bump, bi) : bi; }
+    else r.input = { steer: 0, jump: false, bump: false };
   }
   let lead = -1e9; for (const r of S.racers) if (r.state === 'race' && !r.finished) lead = Math.max(lead, r.s); S.leadS = lead > -1e8 ? lead : S.leadS;
   for (const r of S.racers) stepRacer(r, dt);
@@ -1393,10 +1428,14 @@ function renderLobby() {
     b.append(cv, tx); b.onclick = () => { S.track = i; renderLobby(); S.attractTrack = i; setupAttract(); if (AU.on) setSong(TRK.look.song); }; tb.appendChild(b);
   });
   const lp = $('laps'); lp.textContent = '';
-  for (const n of [2, 3, 5]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = n + ' laps'; c.setAttribute('aria-pressed', String(S.laps === n)); c.onclick = () => { S.laps = n; renderLobby(); }; lp.appendChild(c); }
+  for (const n of [2, 3, 5]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = n + ' laps'; c.setAttribute('aria-pressed', String(S.laps === n)); c.onclick = () => { S.laps = n; saveOpts(); renderLobby(); }; lp.appendChild(c); }
+  const st = $('steerOpt'); st.textContent = '';
+  for (const [v, t] of [[true, 'Lanes'], [false, 'Free']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.lanes === v)); c.onclick = () => { S.lanes = v; saveOpts(); renderLobby(); }; st.appendChild(c); }
   const go = $('ghostOpt'); go.textContent = '';
-  for (const [v, t] of [[true, 'On'], [false, 'Off']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.ghostOn === v)); c.onclick = () => { S.ghostOn = v; GH.root.visible = GH.shadow.visible = v; renderLobby(); }; go.appendChild(c); }
-  $('help').innerHTML = COARSE && S.slots.length === 1 ? 'Hold <b>◀ ▶</b> to steer, tap <b>JUMP</b>, tap <b>BUMP</b> to shove the critter next to you.' : 'Steer with your keys or stick · <b>jump</b> over trouble · <b>bump</b> dashes sideways and shoves whoever you hit · <kbd>Enter</kbd> to start · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound';
+  for (const [v, t] of [[true, 'On'], [false, 'Off']]) { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = t; c.setAttribute('aria-pressed', String(S.ghostOn === v)); c.onclick = () => { S.ghostOn = v; GH.root.visible = GH.shadow.visible = v; saveOpts(); renderLobby(); }; go.appendChild(c); }
+  const touchHelp = S.lanes ? 'Swipe left or right to switch lanes, swipe up to jump, tap to <b>bump</b> the critter next to you. The buttons work too.' : 'Hold <b>◀ ▶</b> to steer, tap <b>JUMP</b>, tap <b>BUMP</b> to shove the critter next to you.';
+  const keyHelp = (S.lanes ? 'Left/right hops a lane · <b>bump</b> shoves the critter next to you a lane over, off the track from the edge lane' : 'Steer freely · <b>bump</b> dashes sideways and shoves whoever you hit') + ' · <b>jump</b> over trouble · <kbd>Enter</kbd> to start · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound';
+  $('help').innerHTML = COARSE && S.slots.length === 1 ? touchHelp : keyHelp;
 }
 function drawThumb(cv, ti) {
   const tr = TRACKS[ti], sh = tr.shape, g = cv.getContext('2d'), pts = [];
